@@ -19,7 +19,7 @@ func (s Step) GetDescriptionVariables() ([]string, error) {
 		return nil, fmt.Errorf("Test Step '%s' is ill formatted because it contains an odd number of '", s.Description)
 	}
 
-	var descriptionVariables []string
+	descriptionVariables := []string{}
 
 	for index := 1; index < len(descriptionComponents); index += 2 {
 		descriptionVariables = append(descriptionVariables, descriptionComponents[index])

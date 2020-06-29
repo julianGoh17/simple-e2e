@@ -4,65 +4,74 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/go-yaml/yaml"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMultiStageUnmarshal(t *testing.T) {
 	procedure := unmarshalYaml("multi-stage-test", t)
 
-	AssertEqual(t, procedure.Name, "Multi-stage Test")
-	AssertEqual(t, procedure.Description, "DO NOT ALTER OR DELETE. This is an example of a multi stage test where each stage has multiple steps.")
+	assert.Equal(t, "Multi-stage Test", procedure.Name)
+	assert.Equal(t, "DO NOT ALTER OR DELETE. This is an example of a multi stage test where each stage has multiple steps.", procedure.Description)
 
-	AssertEqual(t, len(procedure.GlobalVariables), 2)
-	AssertEqual(t, procedure.GlobalVariables["MOCK_API"], "true")
-	AssertEqual(t, procedure.GlobalVariables["DOES_SUCCEED"], "true")
+	assert.Equal(t, 2, len(procedure.GlobalVariables))
+	assert.Equal(t, "true", procedure.GlobalVariables["MOCK_API"])
+	assert.Equal(t, "true", procedure.GlobalVariables["DOES_SUCCEED"])
 
-	AssertEqual(t, len(procedure.Stages), 2)
+	assert.Equal(t, 2, len(procedure.Stages))
 
 	firstStage := procedure.Stages[0]
-	AssertEqual(t, firstStage.Name, "setup")
-	AssertEqual(t, len(firstStage.Steps), 2)
-	AssertEqual(t, firstStage.Steps[0].Description, "Create mock API endpoint")
-	AssertEqual(t, len(firstStage.Steps[0].Variables), 2)
-	AssertEqual(t, firstStage.Steps[0].Variables["URL"], "localhost:8080/v1/weather")
-	AssertEqual(t, firstStage.Steps[0].Variables["RETRIES"], "1")
+	assert.Equal(t, "setup", firstStage.Name)
+	assert.Equal(t, 2, len(firstStage.Steps))
+	assert.Equal(t, "Create mock API endpoint", firstStage.Steps[0].Description)
+	assert.Equal(t, 2, len(firstStage.Steps[0].Variables))
+	assert.Equal(t, "localhost:8080/v1/weather", firstStage.Steps[0].Variables["URL"])
+	assert.Equal(t, "1", firstStage.Steps[0].Variables["RETRIES"])
 
-	AssertEqual(t, firstStage.Steps[1].Description, "Load fake data to mock API endpoint")
-	AssertEqual(t, len(firstStage.Steps[1].Variables), 2)
-	AssertEqual(t, firstStage.Steps[1].Variables["URL"], "localhost:8080/v1/weather")
-	AssertEqual(t, firstStage.Steps[1].Variables["PAYLOAD"], "{\"some\":\"data\"}")
+	assert.Equal(t, "Load fake data to mock API endpoint", firstStage.Steps[1].Description)
+	assert.Equal(t, 2, len(firstStage.Steps[1].Variables))
+	assert.Equal(t, "localhost:8080/v1/weather", firstStage.Steps[1].Variables["URL"])
+	assert.Equal(t, "{\"some\":\"data\"}", firstStage.Steps[1].Variables["PAYLOAD"])
 
 	secondStage := procedure.Stages[1]
-	AssertEqual(t, secondStage.Name, "test")
-	AssertEqual(t, len(secondStage.Steps), 1)
-	AssertEqual(t, secondStage.Steps[0].Description, "Get data from API Endpoint")
-	AssertEqual(t, len(secondStage.Steps[0].Variables), 2)
-	AssertEqual(t, secondStage.Steps[0].Variables["URL"], "localhost:8080/v1/weather")
-	AssertEqual(t, secondStage.Steps[0].Variables["PAYLOAD"], "{\"some\":\"data\"}")
+	assert.Equal(t, "test", secondStage.Name)
+	assert.Equal(t, 1, len(secondStage.Steps))
+	assert.Equal(t, "Get data from API Endpoint", secondStage.Steps[0].Description)
+	assert.Equal(t, 2, len(secondStage.Steps[0].Variables))
+	assert.Equal(t, "localhost:8080/v1/weather", secondStage.Steps[0].Variables["URL"])
+	assert.Equal(t, "{\"some\":\"data\"}", secondStage.Steps[0].Variables["PAYLOAD"])
 }
 
 func TestSimpleUnmarshal(t *testing.T) {
 	procedure := unmarshalYaml("simple-test", t)
 
-	AssertEqual(t, procedure.Name, "Simple Test")
-	AssertEqual(t, procedure.Description, "DO NOT ALTER OR DELETE. This is an example of a simple test with a single stage.")
+	assert.Equal(t, "Simple Test", procedure.Name)
+	assert.Equal(t, "DO NOT ALTER OR DELETE. This is an example of a simple test with a single stage.", procedure.Description)
 
-	AssertEqual(t, len(procedure.GlobalVariables), 0)
+	assert.Equal(t, 0, len(procedure.GlobalVariables))
 
-	AssertEqual(t, len(procedure.Stages), 1)
+	assert.Equal(t, 1, len(procedure.Stages))
 
 	firstStage := procedure.Stages[0]
-	AssertEqual(t, firstStage.Name, "test")
-	AssertEqual(t, len(firstStage.Steps), 2)
-	AssertEqual(t, firstStage.Steps[0].Description, "Stand Up UI")
-	AssertEqual(t, len(firstStage.Steps[0].Variables), 1)
-	AssertEqual(t, firstStage.Steps[0].Variables["URL"], "localhost:8080")
+	assert.Equal(t, "test", firstStage.Name)
+	assert.Equal(t, 2, len(firstStage.Steps))
+	assert.Equal(t, "Stand Up UI", firstStage.Steps[0].Description)
+	assert.Equal(t, 1, len(firstStage.Steps[0].Variables))
+	assert.Equal(t, "localhost:8080", firstStage.Steps[0].Variables["URL"])
 
-	AssertEqual(t, firstStage.Steps[1].Description, "Click some buttons")
-	AssertEqual(t, len(firstStage.Steps[1].Variables), 0)
+	assert.Equal(t, "Click some buttons", firstStage.Steps[1].Description)
+	assert.Equal(t, 0, len(firstStage.Steps[1].Variables))
+}
+
+func TestGlobalVariablesMultiStage(t *testing.T) {
+	procedure := unmarshalYaml("multi-stage-test", t)
+	assert.NoError(t, procedure.SetGlobalVariables())
+
+	for key, value := range procedure.GlobalVariables {
+		assert.Equal(t, os.Getenv(key), value)
+	}
 }
 
 func unmarshalYaml(fileName string, t *testing.T) Procedure {
@@ -89,13 +98,4 @@ func getTestFileDirectory(fileName string, t *testing.T) string {
 	}
 
 	return fmt.Sprintf("%s/../../tests/examples/%s.yaml", dir, fileName)
-}
-
-// AssertEqual checks if values are equal
-func AssertEqual(t *testing.T, a interface{}, b interface{}) {
-	if a == b {
-		return
-	}
-
-	t.Errorf("Received %v (type %v), expected %v (type %v)", a, reflect.TypeOf(a), b, reflect.TypeOf(b))
 }
