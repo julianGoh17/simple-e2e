@@ -1,0 +1,18 @@
+name: "this is the test"
+
+globalVariables:
+  test: "boy"
+  foo: "bar"
+
+stages:
+  - name: setup
+    steps:
+      - description: "I try to do something cool"
+        variables:
+          WHO: "me"
+          TRIES: :"blah"
+      - description: "I should have failed at something cool"
+
+  - name: "test"
+    steps:
+      - description: "I try to test if I am cool"
