@@ -1,0 +1,26 @@
+name: "Multi-stage Test"
+
+description: "DO NOT ALTER OR DELETE. This is an example of a multi stage test where each stage has multiple steps."
+
+globalVariables:
+  MOCK_API: "true"
+  DOES_SUCCEED: "true"
+
+stages:
+  - name: setup
+    steps:
+      - description: "Create mock API endpoint"
+        variables:
+          URL: "localhost:8080/v1/weather"
+          RETRIES: "1"
+      - description: "Load fake data to mock API endpoint"
+        variables:
+          URL: "localhost:8080/v1/weather"
+          PAYLOAD: '{"some":"data"}'
+
+  - name: "test"
+    steps:
+      - description: "Get data from API Endpoint"
+        variables:
+          URL: "localhost:8080/v1/weather"
+          PAYLOAD: '{"some":"data"}'

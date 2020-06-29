@@ -11,14 +11,14 @@ import (
 )
 
 func main() {
-	testProcedure := models.TestProcedure{}
+	testProcedure := models.Procedure{}
 
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	body, err := ioutil.ReadFile(fmt.Sprintf("%s/test.yaml", dir))
+	body, err := ioutil.ReadFile(fmt.Sprintf("%s/tests/examples/simple-test.yaml", dir))
 	if err != nil {
 		log.Fatalf("unable to read file: %v", err)
 	}
