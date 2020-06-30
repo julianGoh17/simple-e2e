@@ -70,7 +70,7 @@ func TestGlobalVariablesMultiStage(t *testing.T) {
 	assert.NoError(t, procedure.SetGlobalVariables())
 
 	for key, value := range procedure.GlobalVariables {
-		assert.Equal(t, os.Getenv(key), value)
+		assert.Equal(t, value, os.Getenv(key))
 	}
 }
 

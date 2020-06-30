@@ -24,7 +24,7 @@ func main() {
 	}
 	fmt.Println(string(body))
 
-	err = yaml.Unmarshal([]byte(body), &testProcedure)
+	err = yaml.Unmarshal(body, &testProcedure)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

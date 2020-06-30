@@ -55,6 +55,17 @@ func TestGettingDescriptionVariables(t *testing.T) {
 	}
 }
 
+func TestHasSucceed(t *testing.T) {
+	step := &Step{}
+	assert.False(t, step.HasSucceeded())
+
+	step.SetPassed()
+	assert.True(t, step.HasSucceeded())
+
+	step.SetFailed()
+	assert.False(t, step.HasSucceeded())
+}
+
 func TestStepCanGetEnvVar(t *testing.T) {
 	key := "key"
 	value := "value"
