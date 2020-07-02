@@ -19,6 +19,7 @@ stages:
           PAYLOAD: '{"some":"data"}'
 
   - name: "test"
+    alwaysRuns: true
     steps:
       - description: "Get data from API Endpoint"
         variables:

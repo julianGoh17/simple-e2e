@@ -1,140 +1,156 @@
 package operations
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
+	"errors"
 	"testing"
 
 	models "github.com/julianGoh17/simple-e2e/framework/models"
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	regexDescription        = "This is a '${string}'"
-	literalDescription      = "This is a literal string"
-	invalidRegexDescription = `'${string}'r([a-z]+)gosdf[`
-	regexKey                = "This is a '('[A-Za-z]+')'"
-)
+const illFormatted = `
+no: good
+`
 
-func TestAddTestStep(t *testing.T) {
-	tables := []struct {
-		descriptions []string
-		literalKeys  []string
-		regexKeys    []string
-		controller   *Controller
+const correctlyFormated = `
+name: example-test
+description: example description
+stages:
+  - name: example-stage
+    steps: 
+      - description: example-step
+`
+
+const multiStageRun = `
+name: example-test
+description: example description
+stages:
+  - name: example-stage
+    steps:
+      - description: "example-step"
+  - name: example-stage2
+    alwaysRuns: true
+    steps:
+      - description: "example-step"`
+
+const noName = `
+description: example description
+stages:
+  - description: step
+	
+`
+
+const noDescription = `
+name: example-test
+stages:
+  - description: step
+`
+
+const noStages = `
+name: example-test
+description: example description
+`
+
+func TestYamlFormatting(t *testing.T) {
+	controller := NewController()
+
+	testFileOutcomes := []struct {
+		testFile  string
+		isCorrect bool
+	}{
+		{illFormatted, false},
+		{noName, false},
+		{noDescription, false},
+		{noStages, false},
+		{correctlyFormated, true},
+	}
+
+	for _, outcome := range testFileOutcomes {
+		if outcome.isCorrect {
+			assert.NoError(t, controller.SetProcedure([]byte(outcome.testFile)))
+		} else {
+			assert.Error(t, controller.SetProcedure([]byte(outcome.testFile)))
+		}
+	}
+}
+
+func TestRunStages(t *testing.T) {
+	testFileOutcomes := []struct {
+		testFile     string
+		testFunction func(*models.Step) error
+		stages       []string
 		willError    bool
 	}{
 		{
-			[]string{regexDescription},
+			correctlyFormated,
+			testFuncPassStep,
 			[]string{},
-			[]string{regexKey},
-			NewController(),
 			false,
 		},
 		{
-			[]string{literalDescription},
-			[]string{literalDescription},
+			correctlyFormated,
+			testFuncFailStep,
 			[]string{},
-			NewController(),
+			true,
+		},
+		{
+			correctlyFormated,
+			testFuncErrorStep,
+			[]string{},
+			true,
+		},
+		{
+			correctlyFormated,
+			testFuncPassStep,
+			[]string{"example-stage"},
 			false,
 		},
 		{
-			[]string{literalDescription, regexDescription},
-			[]string{literalDescription},
-			[]string{regexKey},
-			NewController(),
-			false,
+			correctlyFormated,
+			testFuncFailStep,
+			[]string{"example-stage"},
+			true,
 		},
 		{
-			[]string{invalidRegexDescription},
+			illFormatted,
+			testFuncFailStep,
 			[]string{},
-			[]string{},
-			NewController(),
 			true,
 		},
 	}
 
-	for _, table := range tables {
-		errMsg := fmt.Sprintf("Failed for descriptions '%s'", table.descriptions)
-		for _, description := range table.descriptions {
-			if table.willError {
-				assert.Error(t, table.controller.AddTestStep(description, testFuncPassStep), errMsg)
-			} else {
-				assert.NoError(t, table.controller.AddTestStep(description, testFuncPassStep), errMsg)
-			}
-		}
-		assert.Equal(t, len(table.literalKeys), len(table.controller.literalTestMethods), errMsg)
-		assert.Equal(t, len(table.regexKeys), len(table.controller.regexTestMethods), errMsg)
-
-		for key := range table.controller.literalTestMethods {
-			assert.NotNil(t, table.controller.literalTestMethods[key], errMsg)
-		}
-
-		for key := range table.controller.regexTestMethods {
-			assert.NotNil(t, table.controller.regexTestMethods[key], errMsg)
+	for _, outcome := range testFileOutcomes {
+		controller := NewController()
+		assert.NoError(t, controller.AddTestStep("example-step", outcome.testFunction))
+		if outcome.willError {
+			assert.Error(t, controller.RunTest([]byte(outcome.testFile), outcome.stages...))
+		} else {
+			assert.NoError(t, controller.RunTest([]byte(outcome.testFile), outcome.stages...))
 		}
 	}
 }
 
-func TestAddingDuplicateRegexTestSteps(t *testing.T) {
+func TestWillRunAlwaysRunsEvenWhenFail(t *testing.T) {
 	controller := NewController()
-
-	assert.NoError(t, controller.AddTestStep(regexDescription, testFuncPassStep))
-	assert.Error(t, controller.AddTestStep(regexDescription, testFuncPassStep))
-
-	assert.Equal(t, 0, len(controller.literalTestMethods))
-	assert.Equal(t, 1, len(controller.regexTestMethods))
+	assert.NoError(t, controller.AddTestStep("example-step", testFuncFailStep))
+	assert.Error(t, controller.RunTest([]byte(multiStageRun)))
 }
 
-func TestAddingDuplicateLiteralTestSteps(t *testing.T) {
+func TestFailsWhenCanNotGetStep(t *testing.T) {
 	controller := NewController()
-
-	assert.NoError(t, controller.AddTestStep(literalDescription, testFuncPassStep))
-	assert.Error(t, controller.AddTestStep(literalDescription, testFuncPassStep))
-
-	assert.Equal(t, 1, len(controller.literalTestMethods))
-	assert.Equal(t, 0, len(controller.regexTestMethods))
+	assert.Error(t, controller.RunTest([]byte(multiStageRun)))
 }
 
-func TestCorrectlyFormattedYaml(t *testing.T) {
-	controller := NewController()
-
-	data := unmarshalYaml("multi-stage-test", t)
-	assert.NoError(t, controller.SetProcedure(data))
-}
-
-func TestIncorrectlyFormattedYaml(t *testing.T) {
-	controller := NewController()
-
-	data := unmarshalYaml("ill-formatted", t)
-	assert.Error(t, controller.SetProcedure(data))
-}
-
-func testFuncPassStep(step *models.Step) {
+func testFuncPassStep(step *models.Step) error {
 	step.SetPassed()
+	return nil
 }
 
-func testFuncFailStep(step *models.Step) {
+func testFuncFailStep(step *models.Step) error {
 	step.SetFailed()
+	return nil
 }
 
-func unmarshalYaml(fileName string, t *testing.T) []byte {
-	filePath := getTestFileDirectory(fileName, t)
-
-	body, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		t.Errorf("unable to read file: %v", err)
-	}
-
-	return body
-}
-
-func getTestFileDirectory(fileName string, t *testing.T) string {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Errorf("Error getting Test YAML because: %s", err)
-	}
-
-	return fmt.Sprintf("%s/../../tests/examples/%s.yaml", dir, fileName)
+func testFuncErrorStep(step *models.Step) error {
+	return errors.New("This will error")
 }

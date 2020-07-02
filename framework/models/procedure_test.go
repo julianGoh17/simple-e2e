@@ -24,6 +24,7 @@ func TestMultiStageUnmarshal(t *testing.T) {
 
 	firstStage := procedure.Stages[0]
 	assert.Equal(t, "setup", firstStage.Name)
+	assert.Equal(t, false, firstStage.AlwaysRuns)
 	assert.Equal(t, 2, len(firstStage.Steps))
 	assert.Equal(t, "Create mock API endpoint", firstStage.Steps[0].Description)
 	assert.Equal(t, 2, len(firstStage.Steps[0].Variables))
@@ -37,6 +38,7 @@ func TestMultiStageUnmarshal(t *testing.T) {
 
 	secondStage := procedure.Stages[1]
 	assert.Equal(t, "test", secondStage.Name)
+	assert.Equal(t, true, secondStage.AlwaysRuns)
 	assert.Equal(t, 1, len(secondStage.Steps))
 	assert.Equal(t, "Get data from API Endpoint", secondStage.Steps[0].Description)
 	assert.Equal(t, 2, len(secondStage.Steps[0].Variables))
