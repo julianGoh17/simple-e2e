@@ -4,11 +4,12 @@ The below sections detail what features have been completed and what are still t
 
 ## Completed Features
 
-## TODO
-
 - Test Framework
 - E2E Container
-- Dockerised component deployment
+
+## TODO
+
+- Docker Container deployment
 
 ## Credits
 
