@@ -1,0 +1,11 @@
+name: "Simple Test"
+
+description: "DO NOT ALTER OR DELETE. This is an example of a simple test with a single stage."
+
+stages:
+  - name: test
+    steps:
+      - description: "Stand Up UI"
+        variables:
+          URL: "localhost:8080"
+      - description: "Click some buttons"
