@@ -28,6 +28,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-
 	fmt.Printf("--- test procedure:\n%v\n\n", testProcedure)
 }
