@@ -1,0 +1,12 @@
+name: "Golang Unit Tests"
+description: "Runs the golang unit tests to see if there are any failed tests"
+inputs:
+  test-type: # id of input
+    description: "Specifies which type of test to run"
+    required: true
+    default: "unit-test"
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.test-type }}
