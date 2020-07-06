@@ -17,7 +17,7 @@ if [ "$1" = "unit-test" ]; then
     echo "*** Running unit tests***"
     cd "$SIMPLE_E2E_PATH/framework" || return 
     sudo go get 
-    sudo go test ./...
+    sudo go test -cover ./... 
     if [ $? -ne 0 ]; then 
         exit 1
     fi
