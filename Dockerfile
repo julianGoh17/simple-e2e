@@ -9,7 +9,7 @@ ARG USER="e2e"
 # Install dependencies
 RUN set -ex && \
     apk update && \
-    apk add --no-cache sudo bash git openssh
+    apk add --no-cache sudo bash git openssh gcc go git mercurial
 
 # Add non-root user
 RUN adduser -D $USER \
@@ -21,9 +21,13 @@ WORKDIR /home/${USER}
 # Set up volume mount
 RUN mkdir -p ${SIMPLE_E2E_PATH} && \
     mkdir /home/${USER}/tests
+
+COPY ./framework ${SIMPLE_E2E_PATH}/framework
+COPY ./tests ${SIMPLE_E2E_PATH}/tests
+
 VOLUME [ ${SIMPLE_E2E_PATH}/framework ]
 VOLUME [ /home/${USER}/tests ]
 
-COPY "run.sh" "/"
+COPY "entrypoint.sh" "/entrypoint.sh"
 
-CMD [ "/run.sh" ]
+ENTRYPOINT [ "/entrypoint.sh" ]
