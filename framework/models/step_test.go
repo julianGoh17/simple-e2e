@@ -49,9 +49,6 @@ func TestGettingDescriptionVariables(t *testing.T) {
 			assert.Error(t, err)
 		} else {
 			assert.Equal(t, table.ExpectedDescriptionVariables, descriptionVariables)
-			for _, value := range descriptionVariables {
-				assert.NotNil(t, table.Step.GetTestVariable(value))
-			}
 		}
 	}
 }
