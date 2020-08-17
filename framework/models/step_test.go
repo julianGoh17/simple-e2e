@@ -53,6 +53,466 @@ func TestGettingDescriptionVariables(t *testing.T) {
 	}
 }
 
+func TestGettingStringVariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected string
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			"RandomVariable",
+			nil,
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			"",
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsString("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingIntegerVariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected int
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			0,
+			fmt.Errorf("Could not convert 'RandomVariable' to type 'int'"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			0,
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "0",
+				},
+			},
+			0,
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsInteger("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingFloat32VariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected float32
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			0,
+			fmt.Errorf("Could not convert 'RandomVariable' to type 'float32'"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			0,
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "0",
+				},
+			},
+			0,
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsFloat32("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingFloat64VariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected float64
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			0,
+			fmt.Errorf("Could not convert 'RandomVariable' to type 'float64'"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			0,
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "0",
+				},
+			},
+			0,
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsFloat64("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingBooleanVariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected bool
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			false,
+			fmt.Errorf("Could not convert 'RandomVariable' to type 'bool'"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			false,
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "True",
+				},
+			},
+			true,
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsBoolean("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingStringArrayFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected []string
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			[]string{"RandomVariable"},
+			nil,
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			[]string{},
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsStringArray("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingIntegerArrayFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected []int
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			[]int{},
+			fmt.Errorf("Could not convert '%s' to type '[]int'", "RandomVariable"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			[]int{},
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "1,2,3,4",
+				},
+			},
+			[]int{1, 2, 3, 4},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsIntegerArray("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingFloat32ArrayFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected []float32
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			[]float32{},
+			fmt.Errorf("Could not convert '%s' to type '[]float32'", "RandomVariable"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			[]float32{},
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "1.111,2,3,4",
+				},
+			},
+			[]float32{1.111, 2, 3, 4},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsFloat32Array("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingFloat64ArrayFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected []float64
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			[]float64{},
+			fmt.Errorf("Could not convert '%s' to type '[]float64'", "RandomVariable"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			[]float64{},
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "1.111,2,3,4",
+				},
+			},
+			[]float64{1.111, 2, 3, 4},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsFloat64Array("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingBooleanArrayFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected []bool
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			[]bool{},
+			fmt.Errorf("Could not convert '%s' to type '[]bool'", "RandomVariable"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			[]bool{},
+			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "True,false,false",
+				},
+			},
+			[]bool{true, false, false},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsBooleanArray("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
 func TestHasSucceed(t *testing.T) {
 	step := &Step{}
 	assert.False(t, step.HasSucceeded())
