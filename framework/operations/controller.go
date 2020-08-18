@@ -7,15 +7,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-/*
-	Things to Accomplish:
-
-	- Create mapping function which maps string to function
-	- Create stage manager which determines which stages will be run (if any stages requested)
-	- Create way a single manager which will manage the test run and determine when things test steps fail
-	-
-*/
-
 // Controller is able to understand which stages and steps to run based on the test file. It is responsible for understanding if a test step has
 // failed and will stop the test run prematurely if so.
 type Controller struct {
