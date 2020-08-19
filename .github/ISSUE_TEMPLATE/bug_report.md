@@ -6,17 +6,16 @@ labels: bug
 ---
 
 ## Expected Behavior
-<!--- Tell us what should happen -->
+
+Explain what you expected to happen
 
 ## Current Behavior
-<!--- Tell us what happens instead of the expected behavior -->
 
-## Possible Solution
-<!--- Not obligatory, but suggest a fix/reason for the bug, -->
+Explain what happens instead of the expected behavior
 
 ## Steps to Reproduce
-<!--- Provide a link to a live example, or an unambiguous set of steps to -->
-<!--- reproduce this bug. Include code to reproduce, if relevant -->
+
+Please provide a set of steps that you used to recreate this behavior and whether you see this intermittently.
 
 1.
 2.
@@ -24,9 +23,9 @@ labels: bug
 4.
 
 ## Context (Environment)
-<!--- How has this issue affected you? What are you trying to accomplish? -->
-<!--- Providing context helps us come up with a solution that is most useful in the real world -->
-<!--- Provide possible reasons why this could be the case-->
 
-## Detailed Description
-<!--- Provide a detailed description of the change or addition you are proposing -->
+How has this issue affected you? What are you trying to accomplish? Providing context helps us come up with a solution that is most useful in the real world
+
+## Possible Solution
+
+Not obligatory, but suggest a fix/reason for the bug. Delete this section if not applicable.
