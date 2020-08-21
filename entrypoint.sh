@@ -12,6 +12,8 @@ echo "Building Simple-E2E binary..."
 cd "$SIMPLE_E2E_PATH/framework" || return
 sudo go build -o ./simple-e2e
 mv ./simple-e2e $WORK_DIR
+# TODO: restrict permissions on docker socket so that only binary can use it
+chmod 777 /var/run/docker.sock
 cd "$WORK_DIR" || return
 
 # For github action
