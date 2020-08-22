@@ -1,6 +1,11 @@
-package client
+package docker
 
 import (
+	"context"
+	"io"
+	"os"
+
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
@@ -24,4 +29,16 @@ func (wrapper *WrapperClient) Initialize() error {
 // Close will close the framework's docker client
 func (wrapper *WrapperClient) Close() error {
 	return wrapper.Cli.Close()
+}
+
+// PullImage will pull the image from DockerHub onto the host machine's daemon.
+// TODO: Add ability to pass in ImagePullOpions configured through container handler
+func (wrapper *WrapperClient) PullImage(ctx context.Context, image string) error {
+	reader, err := wrapper.Cli.ImagePull(ctx, image, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+	io.Copy(os.Stdout, reader)
+	return nil
+
 }
