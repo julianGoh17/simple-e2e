@@ -3,7 +3,6 @@ package operations
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
@@ -72,14 +71,10 @@ func (controller *Controller) RunTest(testLocation string, stages ...string) err
 		Str("stages", strings.Join(stages, ",")).
 		Msg("Running test")
 
-	dir, err := os.Getwd()
+	dir := os.Getenv("TEST_DIR")
+	body, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", dir, testLocation))
 	if err != nil {
-		return err
-	}
-
-	body, err := ioutil.ReadFile(fmt.Sprintf("%s/tests/%s", dir, testLocation))
-	if err != nil {
-		log.Fatalf("unable to read file: %v", err)
+		return fmt.Errorf("unable to read file: %v", err)
 	}
 
 	return controller.runTest(body, stages...)
@@ -156,6 +151,7 @@ func (controller *Controller) runStage(stagePointer *model.Stage) error {
 				Str("stage", stage.Name).
 				Bool("hasFailed", true).
 				Msg("Stage has failed at step")
+			return err
 		}
 	}
 	logger.Info().

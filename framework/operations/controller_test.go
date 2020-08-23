@@ -2,6 +2,11 @@ package operations
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	models "github.com/julianGoh17/simple-e2e/framework/models"
@@ -70,6 +75,33 @@ func TestYamlFormatting(t *testing.T) {
 			assert.NoError(t, controller.SetProcedure([]byte(outcome.testFile)))
 		} else {
 			assert.Error(t, controller.SetProcedure([]byte(outcome.testFile)))
+		}
+	}
+}
+
+func TestRunTest(t *testing.T) {
+	controller := NewController()
+
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	projectRootDir := filepath.Dir(d)
+
+	tables := []struct {
+		testFile     string
+		testLocation string
+		willError    bool
+	}{
+		{"test.yaml", fmt.Sprintf("%s/../tests", projectRootDir), false},
+		{illFormatted, "random", true},
+	}
+
+	for _, table := range tables {
+		os.Setenv("TEST_DIR", table.testLocation)
+		err := controller.RunTest(table.testFile)
+		if table.willError {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
 		}
 	}
 }
