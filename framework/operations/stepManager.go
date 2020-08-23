@@ -16,10 +16,15 @@ type StepManager struct {
 
 // NewStepManager is the empty constructor which returns a functional StepManager to use
 func NewStepManager() *StepManager {
-	return &StepManager{
+	manager := &StepManager{
 		regexTestMethods:   make(map[string]func(*model.Step) error),
 		literalTestMethods: make(map[string]func(*model.Step) error),
 	}
+	for step, function := range getDefaultSteps() {
+		manager.AddStepToManager(step, function)
+	}
+
+	return manager
 }
 
 // AddStepToManager adds a Step Description and its associated method to the StepManager so it knows what it needs to do
@@ -75,8 +80,8 @@ func (stepManager *StepManager) getRegexMethod(description string) (func(*model.
 }
 
 func (stepManager *StepManager) getLiteralMethod(description string) (func(*model.Step) error, error) {
-	function := stepManager.literalTestMethods[description]
-	if function == nil {
+	function, ok := stepManager.literalTestMethods[description]
+	if !ok {
 		return nil, fmt.Errorf("Step '%s' is not registered in step list", description)
 	}
 	return function, nil

@@ -1,0 +1,23 @@
+name: "default"
+
+description: "DO NOT ALTER OR DELETE. This is an example of a simple test with a single stage."
+
+stages:
+  - name: stage1
+    steps:
+      - description: "Say hello to"
+        variables:
+          NAME: "Julian"
+      - description: "Say hello to"
+        variables:
+          NAME: "Coachella"
+
+  - name: stage2
+    alwaysRuns: true
+    steps:
+      - description: "Say hello to"
+        variables:
+            NAME: "Eugene"
+      - description: "Say hello to"
+        variables:
+          NAME: "Boy"

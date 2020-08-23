@@ -123,9 +123,9 @@ func TestRunStages(t *testing.T) {
 		controller := NewController()
 		assert.NoError(t, controller.AddTestStep("example-step", outcome.testFunction))
 		if outcome.willError {
-			assert.Error(t, controller.RunTest([]byte(outcome.testFile), outcome.stages...))
+			assert.Error(t, controller.runTest([]byte(outcome.testFile), outcome.stages...))
 		} else {
-			assert.NoError(t, controller.RunTest([]byte(outcome.testFile), outcome.stages...))
+			assert.NoError(t, controller.runTest([]byte(outcome.testFile), outcome.stages...))
 		}
 	}
 }
@@ -133,12 +133,12 @@ func TestRunStages(t *testing.T) {
 func TestWillRunAlwaysRunsEvenWhenFail(t *testing.T) {
 	controller := NewController()
 	assert.NoError(t, controller.AddTestStep("example-step", testFuncFailStep))
-	assert.Error(t, controller.RunTest([]byte(multiStageRun)))
+	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 
 func TestFailsWhenCanNotGetStep(t *testing.T) {
 	controller := NewController()
-	assert.Error(t, controller.RunTest([]byte(multiStageRun)))
+	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 
 func testFuncPassStep(step *models.Step) error {
