@@ -20,7 +20,7 @@ This application allows users to break down tests into stages and steps to
 run a set of stages or an entire test. Furthermore, Simple-E2E provides a
 framework to easily create new tests from exisiting steps.`,
 	}
-	controller = operations.NewController()
+	controller *operations.Controller
 )
 
 // Execute executes the root command.
