@@ -3,7 +3,6 @@ package operations
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 
 	model "github.com/julianGoh17/simple-e2e/framework/models"
@@ -12,7 +11,7 @@ import (
 )
 
 var (
-	logger = util.GetGlobalLogger()
+	logger = util.GetStandardLogger()
 )
 
 // Controller is able to understand which stages and steps to run based on the test file. It is responsible for understanding if a test step has
@@ -65,14 +64,13 @@ func (controller *Controller) SetProcedure(procedureData []byte) error {
 }
 
 // RunTest will run a specified test and if any stages are passed in then it will only run those stages
-func (controller *Controller) RunTest(testLocation string, stages ...string) error {
+func (controller *Controller) RunTest(testPath string, stages ...string) error {
 	logger.Info().
-		Str("test", testLocation).
+		Str("testPath", testPath).
 		Str("stages", strings.Join(stages, ",")).
 		Msg("Running test")
 
-	dir := os.Getenv("TEST_DIR")
-	body, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", dir, testLocation))
+	body, err := ioutil.ReadFile(testPath)
 	if err != nil {
 		return fmt.Errorf("unable to read file: %v", err)
 	}

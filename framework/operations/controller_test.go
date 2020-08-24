@@ -3,7 +3,6 @@ package operations
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -92,12 +91,11 @@ func TestRunTest(t *testing.T) {
 		willError    bool
 	}{
 		{"test.yaml", fmt.Sprintf("%s/../tests", projectRootDir), false},
-		{illFormatted, "random", true},
+		{"test.yaml", "random", true},
 	}
 
 	for _, table := range tables {
-		os.Setenv("TEST_DIR", table.testLocation)
-		err := controller.RunTest(table.testFile)
+		err := controller.RunTest(fmt.Sprintf("%s/%s", table.testLocation, table.testFile))
 		if table.willError {
 			assert.Error(t, err)
 		} else {

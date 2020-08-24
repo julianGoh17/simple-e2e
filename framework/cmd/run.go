@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/julianGoh17/simple-e2e/framework/operations"
@@ -12,6 +13,7 @@ var (
 	stages    string
 	test      string
 	verbosity string
+	config    = util.GlobalConfig{}
 	runCmd    = &cobra.Command{
 		Use:   "run",
 		Short: "Run a specified test or stages of that test",
@@ -23,7 +25,8 @@ var (
 			if stages != "" {
 				stage = strings.Split(stages, ",")
 			}
-			return controller.RunTest(test+".yaml", stage...)
+			testPath := fmt.Sprintf("%s/%s.yaml", config.GetOrDefault("TEST_DIR", "/home/e2e/tests"), test)
+			return controller.RunTest(testPath, stage...)
 		},
 	}
 )

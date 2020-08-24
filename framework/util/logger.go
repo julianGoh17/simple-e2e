@@ -32,15 +32,28 @@ func ConfigureGlobalLogLevel(level string) {
 		logLevel = LogLevel
 	}
 
-	logger := GetGlobalLogger()
+	logger := GetStandardLogger()
 	logger.Info().
 		Str("logLevel", logLevel).
 		Msg(fmt.Sprintf("Global logger has been configured to log level '%s'.", logLevel))
 }
 
-// GetGlobalLogger will configure the global logger that will be used by the entire project
-func GetGlobalLogger() zerolog.Logger {
+// GetStandardLogger will retrieve the standard logger for the project
+func GetStandardLogger() *zerolog.Logger {
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	log := zerolog.New(output).With().Timestamp().Logger()
-	return log
+	return &log
+}
+
+// ConfigureLoggerLogLevel will configure the logger level on the specified logger
+func ConfigureLoggerLogLevel(logLevel zerolog.Level, logger *zerolog.Logger) *zerolog.Logger {
+	previousLogLevel := logger.GetLevel().String()
+	newLogger := logger.With().Logger().Level(logLevel)
+
+	newLogger.Debug().
+		Str("logLevel", logLevel.String()).
+		Str("oldLogLevel", previousLogLevel).
+		Msg(fmt.Sprintf("Logger has been configured to log level '%s'.", logLevel.String()))
+
+	return &newLogger
 }
