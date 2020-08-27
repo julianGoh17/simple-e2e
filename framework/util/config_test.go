@@ -26,11 +26,12 @@ func TestGetOrDefaultValues(t *testing.T) {
 		},
 	}
 
-	config := GlobalConfig{}
+	config := NewConfig()
 	key := "REALLY_RANDOM_ENVIRONMENTAL_VARIABLE"
 	for _, value := range values {
 		os.Setenv(key, value.setValue)
-		assert.Equal(t, value.expectedValue, config.GetOrDefault(key, value.expectedValue))
+		config.setDefault(key, value.defaultValue)
+		assert.Equal(t, value.expectedValue, config.GetOrDefault(key))
 	}
 
 }

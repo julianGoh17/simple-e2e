@@ -14,7 +14,11 @@ var (
 	test      string
 	verbosity string
 	config    = util.GlobalConfig{}
-	runCmd    = &cobra.Command{
+)
+
+// NewRunCmd returns the run command as a cobra object to be interacted with
+func NewRunCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "run",
 		Short: "Run a specified test or stages of that test",
 		Long:  `Run all the steps in a specified test or just a specific set of stages from that specified test.`,
@@ -25,14 +29,13 @@ var (
 			if stages != "" {
 				stage = strings.Split(stages, ",")
 			}
-			testPath := fmt.Sprintf("%s/%s.yaml", config.GetOrDefault("TEST_DIR", "/home/e2e/tests"), test)
+			testPath := fmt.Sprintf("%s/%s.yaml", config.GetOrDefault(util.TestDirEnv), test)
 			return controller.RunTest(testPath, stage...)
 		},
 	}
-)
+}
 
-func init() {
-	rootCmd.AddCommand(runCmd)
+func initRunCmd(rootCmd, runCmd *cobra.Command) {
 	// TODO: Better description
 	runCmd.Flags().StringVarP(&test, "test", "t", "", "The name of the test to run. Do not need to pass in file extension.")
 	runCmd.Flags().StringVarP(&stages, "stages", "s", "", "A comma separated list of stages to run from that test.")
@@ -43,4 +46,5 @@ func init() {
 	`)
 
 	runCmd.MarkFlagRequired("test")
+	rootCmd.AddCommand(runCmd)
 }

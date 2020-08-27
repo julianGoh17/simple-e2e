@@ -81,16 +81,14 @@ func TestYamlFormatting(t *testing.T) {
 func TestRunTest(t *testing.T) {
 	controller := NewController()
 
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	projectRootDir := filepath.Dir(d)
+	testFilesRoot := GetTestFilesRoot()
 
 	tables := []struct {
 		testFile     string
 		testLocation string
 		willError    bool
 	}{
-		{"test.yaml", fmt.Sprintf("%s/../tests", projectRootDir), false},
+		{"test.yaml", testFilesRoot, false},
 		{"test.yaml", "random", true},
 	}
 
@@ -183,4 +181,10 @@ func testFuncFailStep(step *models.Step) error {
 
 func testFuncErrorStep(step *models.Step) error {
 	return errors.New("This will error")
+}
+
+func GetTestFilesRoot() string {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	return fmt.Sprintf("%s/../tests", filepath.Dir(d))
 }
