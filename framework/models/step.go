@@ -121,6 +121,16 @@ func (s *Step) GetGlobalVariable(variableName string) string {
 	return os.Getenv(variableName)
 }
 
+// CheckIfStepVariablesExists takes in any number of string variables and asserts that step.variables has those variables.
+func (s *Step) CheckIfStepVariablesExists(wantedVariableNames ...string) error {
+	for _, wantedVariableName := range wantedVariableNames {
+		if _, doesExist := s.Variables[wantedVariableName]; !doesExist {
+			return fmt.Errorf("Could not find variable with name '%s' in step.variables", wantedVariableName)
+		}
+	}
+	return nil
+}
+
 // HasSucceeded returns whether or not the TestStep has succeeded
 func (s *Step) HasSucceeded() bool {
 	return s.isSuccessful

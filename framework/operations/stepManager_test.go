@@ -59,7 +59,7 @@ func TestAddTestStep(t *testing.T) {
 				assert.NoError(t, stepManager.AddStepToManager(description, testFuncPassStep), errMsg)
 			}
 		}
-		assert.Equal(t, len(table.literalKeys), len(stepManager.literalTestMethods), errMsg)
+		assert.Equal(t, len(table.literalKeys), len(stepManager.literalTestMethods)-len(getDefaultSteps()), errMsg)
 		assert.Equal(t, len(table.regexKeys), len(stepManager.regexTestMethods), errMsg)
 
 		for key := range stepManager.literalTestMethods {
@@ -118,7 +118,7 @@ func TestAddingDuplicateRegexTestSteps(t *testing.T) {
 	assert.NoError(t, stepManager.AddStepToManager(regexDescription, testFuncPassStep))
 	assert.Error(t, stepManager.AddStepToManager(regexDescription, testFuncPassStep))
 
-	assert.Equal(t, 0, len(stepManager.literalTestMethods))
+	assert.Equal(t, len(getDefaultSteps()), len(stepManager.literalTestMethods))
 	assert.Equal(t, 1, len(stepManager.regexTestMethods))
 }
 
@@ -128,7 +128,7 @@ func TestAddingDuplicateLiteralTestSteps(t *testing.T) {
 	assert.NoError(t, stepManager.AddStepToManager(literalDescription, testFuncPassStep))
 	assert.Error(t, stepManager.AddStepToManager(literalDescription, testFuncPassStep))
 
-	assert.Equal(t, 1, len(stepManager.literalTestMethods))
+	assert.Equal(t, 1+len(getDefaultSteps()), len(stepManager.literalTestMethods))
 	assert.Equal(t, 0, len(stepManager.regexTestMethods))
 }
 
