@@ -32,6 +32,7 @@ func TestGetOrDefaultValues(t *testing.T) {
 		os.Setenv(key, value.setValue)
 		config.setDefault(key, value.defaultValue)
 		assert.Equal(t, value.expectedValue, config.GetOrDefault(key))
+		os.Unsetenv(key)
 	}
 
 }

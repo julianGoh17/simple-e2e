@@ -5,16 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
-
-// https://gianarb.it/blog/golang-mockmania-cli-command-with-cobra
 
 func TestRootCmd(t *testing.T) {
 	rootCmd := NewRootCmd()
 
 	assert.Equal(t, rootCmd.Use, "Simple-E2E")
-	assert.Equal(t, rootCmd.Short, "A modular and configurable testing infrastructure")
 	assert.Equal(t, rootCmd.Short, "A modular and configurable testing infrastructure")
 	assert.Equal(t, rootCmd.Long, `Simple-E2E is a testing library aimed at making more modular and easier. 
 		This application allows users to break down tests into stages and steps to 

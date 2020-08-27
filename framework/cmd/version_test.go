@@ -22,3 +22,11 @@ func TestVersionCommand(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, stringedOutput, "Simple-E2E binary version: v0.1")
 }
+
+func TestVersionCmdObject(t *testing.T) {
+	versionCmd := NewVersionCmd()
+
+	assert.Equal(t, "version", versionCmd.Use)
+	assert.Equal(t, "Print the version of the Simple-E2E", versionCmd.Short)
+	assert.Equal(t, "Print the current version of the installed Simple-E2E binary", versionCmd.Long)
+}

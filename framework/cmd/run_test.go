@@ -14,10 +14,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRunCmdValues(t *testing.T) {
+	rootCmd := NewRootCmd()
+	runCmd := NewRunCmd()
+	initRunCmd(rootCmd, runCmd)
+
+	assert.Equal(t, "run", runCmd.Use)
+	assert.Equal(t, "Run through a set of or all the stages in a test", runCmd.Short)
+	assert.Equal(t, "Run all the steps in a specified test or just a specific set of stages from that test.", runCmd.Long)
+}
+
 func TestRunCmdFailsWhenNoArgumentsPassedIn(t *testing.T) {
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
+
+	// Unsure why but need to capture output through setting output. Have tried doing it other way, but it won't capture output
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
 	rootCmd.SetArgs([]string{"run"})
@@ -34,6 +46,8 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
+
+	// Unsure why but need to capture output through setting output. Have tried doing it other way, but it won't capture output
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
 	rootCmd.SetArgs([]string{"run", "-t", "test"})
@@ -83,7 +97,6 @@ func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
 	assert.Contains(t, output, "Hello there Coachella!")
 	assert.NotContains(t, output, "Hello there Eugene!")
 	assert.NotContains(t, output, "Hello there Boy!")
-	os.Unsetenv(util.TestDirEnv)
 }
 
 func GetTestFilesRoot() string {
