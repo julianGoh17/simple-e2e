@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/julianGoh17/simple-e2e/framework/docker"
 	model "github.com/julianGoh17/simple-e2e/framework/models"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"gopkg.in/yaml.v2"
@@ -19,13 +20,19 @@ var (
 type Controller struct {
 	stepManager *StepManager
 	procedure   *model.Procedure
+	docker      *docker.Handler
 }
 
 // NewController is a constructor function which returns a pointer to the variable to work with
-func NewController() *Controller {
+func NewController() (*Controller, error) {
+	docker, err := docker.NewHandler()
+	if err != nil {
+		return nil, err
+	}
 	return &Controller{
 		stepManager: NewStepManager(),
-	}
+		docker:      docker,
+	}, nil
 }
 
 // AddTestStep adds a Step Description and its associated function to the Controller so it knows what needs to do
@@ -56,7 +63,12 @@ func (controller *Controller) SetProcedure(procedureData []byte) error {
 			Msg("Test did not contain any stages")
 		return err
 	}
-
+	// Need to pass in snapshot manager/docker/etc into each step so they access same instance
+	for stage := range procedure.Stages {
+		for step := range procedure.Stages[stage].Steps {
+			procedure.Stages[stage].Steps[step].Docker = controller.docker
+		}
+	}
 	controller.procedure = procedure
 	logger.Trace().
 		Msg("Succesfully unmarshalled test file into object")

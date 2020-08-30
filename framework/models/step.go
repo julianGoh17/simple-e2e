@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/julianGoh17/simple-e2e/framework/docker"
 )
 
 // Step is the struct that represents that will map the human readable string to the function
 type Step struct {
 	Description  string
 	Variables    map[string]string `yaml:"variables,omitempty"`
+	Docker       *docker.Handler
 	converter    TypeConverter
 	isSuccessful bool
 }
@@ -134,6 +137,15 @@ func (s *Step) CheckIfStepVariablesExists(wantedVariableNames ...string) error {
 // HasSucceeded returns whether or not the TestStep has succeeded
 func (s *Step) HasSucceeded() bool {
 	return s.isSuccessful
+}
+
+// SetErrored will set the step as failed if an error is passed in or else it will pass
+func (s *Step) SetErrored(err error) {
+	if err != nil {
+		s.SetFailed()
+	} else {
+		s.SetPassed()
+	}
 }
 
 // SetPassed sets the value of TestStep to passed

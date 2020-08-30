@@ -56,7 +56,8 @@ description: example description
 `
 
 func TestYamlFormatting(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 
 	testFileOutcomes := []struct {
 		testFile  string
@@ -79,7 +80,8 @@ func TestYamlFormatting(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 
 	testFilesRoot := GetTestFilesRoot()
 
@@ -148,7 +150,8 @@ func TestRunStages(t *testing.T) {
 	}
 
 	for _, outcome := range testFileOutcomes {
-		controller := NewController()
+		controller, err := NewController()
+		assert.NoError(t, err)
 		assert.NoError(t, controller.AddTestStep("example-step", outcome.testFunction))
 		if outcome.willError {
 			assert.Error(t, controller.runTest([]byte(outcome.testFile), outcome.stages...))
@@ -159,13 +162,15 @@ func TestRunStages(t *testing.T) {
 }
 
 func TestWillRunAlwaysRunsEvenWhenFail(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 	assert.NoError(t, controller.AddTestStep("example-step", testFuncFailStep))
 	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 
 func TestFailsWhenCanNotGetStep(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 

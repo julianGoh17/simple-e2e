@@ -513,6 +513,40 @@ func TestGettingBooleanArrayFromStepVariables(t *testing.T) {
 	}
 }
 
+func TestVariableExistsFunction(t *testing.T) {
+	step := &Step{
+		Description: "This is a step",
+		Variables: map[string]string{
+			"TEST":   "RandomVariable",
+			"RANDOM": "RandomVariable",
+		},
+	}
+
+	noExistEnvVar := "NO_EXIST"
+	tables := []struct {
+		variablesToCheck []string
+		err              error
+	}{
+		{
+			[]string{"TEST", noExistEnvVar},
+			fmt.Errorf("Could not find variable with name '%s' in step.variables", noExistEnvVar),
+		},
+		{
+			[]string{"TEST"},
+			nil,
+		},
+		{
+			[]string{"TEST", "RANDOM"},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		err := step.CheckIfStepVariablesExists(table.variablesToCheck...)
+		assert.Equal(t, table.err, err)
+	}
+}
+
 func TestHasSucceed(t *testing.T) {
 	step := &Step{}
 	assert.False(t, step.HasSucceeded())
@@ -530,6 +564,23 @@ func TestStepCanGetEnvVar(t *testing.T) {
 	step := &Step{}
 	os.Setenv(key, value)
 	assert.Equal(t, step.GetGlobalVariable(key), value)
+}
+
+func TestStepPassesOrFailsTestCorrectlyDueToError(t *testing.T) {
+	step := &Step{}
+	errors := []error{
+		fmt.Errorf("Random Error"),
+		nil,
+	}
+
+	for _, err := range errors {
+		step.SetErrored(err)
+		if err != nil {
+			assert.Equal(t, false, step.HasSucceeded())
+		} else {
+			assert.Equal(t, true, step.HasSucceeded())
+		}
+	}
 }
 
 func TestMain(m *testing.M) {

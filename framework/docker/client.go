@@ -39,6 +39,5 @@ func (wrapper *WrapperClient) PullImage(ctx context.Context, image string) error
 		return err
 	}
 	io.Copy(os.Stdout, reader)
-	return nil
-
+	return reader.Close()
 }

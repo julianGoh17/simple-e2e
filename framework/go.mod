@@ -11,13 +11,15 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/moby/term v0.0.0-20200611042045-63b9a826fb74 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
-	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	google.golang.org/grpc v1.31.0 // indirect

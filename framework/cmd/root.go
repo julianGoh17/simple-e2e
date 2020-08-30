@@ -1,13 +1,8 @@
 package cmd
 
 import (
-	"github.com/julianGoh17/simple-e2e/framework/operations"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-)
-
-var (
-	controller *operations.Controller
 )
 
 // NewRootCmd returns the root cli as an object to be interacted with
