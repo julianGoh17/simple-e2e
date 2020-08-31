@@ -13,6 +13,7 @@ import (
 
 var (
 	logger = util.GetStandardLogger()
+	config = util.NewConfig()
 )
 
 // Controller is able to understand which stages and steps to run based on the test file. It is responsible for understanding if a test step has
@@ -166,7 +167,7 @@ func (controller *Controller) runStage(stagePointer *model.Stage) error {
 	}
 	logger.Info().
 		Str("stage", stage.Name).
-		Msg("Completed running throguh steps in stage")
+		Msg("Completed running through steps in stage")
 	return nil
 }
 

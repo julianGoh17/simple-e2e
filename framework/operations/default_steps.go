@@ -1,15 +1,22 @@
 package operations
 
 import (
+	"archive/tar"
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 
 	"github.com/julianGoh17/simple-e2e/framework/models"
+	"github.com/julianGoh17/simple-e2e/framework/util"
 )
 
 func getDefaultSteps() map[string]func(step *models.Step) error {
 	defaultSteps := map[string]func(step *models.Step) error{
 		"Say hello to": SayHelloTo,
 		"Pull image":   PullImage,
+		"Build image":  BuildImage,
 	}
 
 	return defaultSteps
@@ -51,20 +58,77 @@ func PullImage(step *models.Step) error {
 		image = fmt.Sprintf("%s:%s", image, imageTag)
 	}
 
-	err := step.Docker.PullImage(image)
-	step.SetErrored(err)
-	return traceStepExit(step, err)
+	return traceStepExit(step, step.Docker.PullImage(image))
+}
+
+// BuildImage will build the specified image from the specified Dockerfile located in the 'Dockerfiles' directory
+// Environmental Variables:
+// 	- DOCKERFILE_NAME: The name of the Dockerfile to be built
+func BuildImage(step *models.Step) error {
+	traceStepEntrance(step)
+	dockerfile, err := step.GetValueFromVariablesAsString("DOCKERFILE_NAME")
+	if err != nil {
+		return err
+	}
+
+	build, err := createDockerfileBuild(dockerfile)
+
+	if err != nil {
+		return err
+	}
+	return traceStepExit(step, step.Docker.BuildImage(build, dockerfile))
+}
+
+func createDockerfileBuild(dockerfile string) (io.Reader, error) {
+	logger.Trace().Str("Dockerfile", dockerfile).Msg("Creating tar for dockerfile")
+	dockerfileBytes, err := readDockerfile(dockerfile)
+	if err != nil {
+		return nil, err
+	}
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+	tarHeader := &tar.Header{
+		Name: dockerfile,
+		Size: int64(len(dockerfileBytes)),
+	}
+	err = tw.WriteHeader(tarHeader)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tw.Write(dockerfileBytes)
+	if err != nil {
+		return nil, err
+	}
+	logger.Trace().Str("Dockerfile", dockerfile).Msg("Finished creating tar for dockerfile")
+	return bytes.NewReader(buf.Bytes()), nil
+}
+
+func readDockerfile(dockerfile string) ([]byte, error) {
+	logger.Trace().Str("Dockerfile", dockerfile).Msg("Reading dockerfile")
+	dockerfileReader, err := os.Open(getDockerfilePath(dockerfile))
+	if err != nil {
+		return nil, err
+	}
+	logger.Trace().Str("Dockerfile", dockerfile).Msg("Finished reading dockerfile")
+	return ioutil.ReadAll(dockerfileReader)
+}
+
+func getDockerfilePath(dockerfile string) string {
+	return fmt.Sprintf("%s/%s", config.GetOrDefault(util.DockerfileDirEnv), dockerfile)
 }
 
 func traceStepEntrance(step *models.Step) {
-	logger.Trace().Str("step", step.Description)
+	trace := logger.Trace().Str("description", step.Description)
 	for key, val := range step.Variables {
-		logger.Trace().Str(key, val)
+		trace.Str(key, val)
 	}
-	logger.Trace().Msg("Beginning of step")
+	trace.Msg("Step variables")
+	logger.Info().Str("description", step.Description).Msg("Beginning of step")
 }
 
 func traceStepExit(step *models.Step, err error) error {
-	logger.Trace().Bool("hasStepPassed", step.HasSucceeded()).Err(err).Msg("End of step")
+	logger.Info().Bool("hasStepPassed", step.HasSucceeded()).Err(err).Msg("End of step")
+	step.SetErrored(err)
 	return err
 }

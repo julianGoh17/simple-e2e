@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"io"
 )
 
 // Handler is the framework's controller responsible for all docker related operations
@@ -30,6 +31,7 @@ func (handler *Handler) PullImage(image string) error {
 }
 
 // BuildImage will build an image from a specified Dockrefile onto the host machine's daemon
-func (handler *Handler) BuildImage() error {
-	return nil
+func (handler *Handler) BuildImage(build io.Reader, dockerfile string) error {
+	ctx := context.Background()
+	return handler.wrapper.BuildImage(ctx, build, dockerfile)
 }

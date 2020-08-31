@@ -38,6 +38,24 @@ func (wrapper *WrapperClient) PullImage(ctx context.Context, image string) error
 	if err != nil {
 		return err
 	}
+	return readOutputAndCloseReader(reader)
+}
+
+// BuildImage will build the specified image in the specified location
+// TODO: Add ability to pass in ImageBuildOptions configured through container handler
+func (wrapper *WrapperClient) BuildImage(ctx context.Context, buildContext io.Reader, dockerfile string) error {
+	res, err := wrapper.Cli.ImageBuild(ctx, buildContext, types.ImageBuildOptions{
+		Context:    buildContext,
+		Dockerfile: dockerfile,
+	})
+	if err != nil {
+		return err
+	}
+
+	return readOutputAndCloseReader(res.Body)
+}
+
+func readOutputAndCloseReader(reader io.ReadCloser) error {
 	io.Copy(os.Stdout, reader)
 	return reader.Close()
 }
