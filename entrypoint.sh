@@ -20,9 +20,10 @@ cd "$WORK_DIR" || return
 # For github action
 if [ "$1" = "unit-test" ]; then 
     echo "*** Running unit tests***"
+    env
     cd "$SIMPLE_E2E_PATH/framework" || return 
     sudo go get 
-    sudo go test -cover ./... 
+    sudo --preserve-env go test -cover ./... -v
     if [ $? -ne 0 ]; then 
         exit 1
     fi
