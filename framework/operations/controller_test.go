@@ -3,12 +3,14 @@ package operations
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	models "github.com/julianGoh17/simple-e2e/framework/models"
+	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,17 +82,16 @@ func TestYamlFormatting(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
+	SetTestFilesRoot()
 	controller, err := NewController()
 	assert.NoError(t, err)
-
-	testFilesRoot := GetTestFilesRoot()
 
 	tables := []struct {
 		testFile     string
 		testLocation string
 		willError    bool
 	}{
-		{"test.yaml", testFilesRoot, false},
+		{"test.yaml", os.Getenv(util.TestDirEnv), false},
 		{"test.yaml", "random", true},
 	}
 
@@ -188,8 +189,11 @@ func testFuncErrorStep(step *models.Step) error {
 	return errors.New("This will error")
 }
 
-func GetTestFilesRoot() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return fmt.Sprintf("%s/../tests", filepath.Dir(d))
+func SetTestFilesRoot() {
+	// If not in container, set as the path to the 'project's root/tests'
+	if os.Getenv(util.TestDirEnv) == "" {
+		_, b, _, _ := runtime.Caller(0)
+		d := path.Join(path.Dir(b))
+		os.Setenv(util.TestDirEnv, fmt.Sprintf("%s/../tests", filepath.Dir(d)))
+	}
 }

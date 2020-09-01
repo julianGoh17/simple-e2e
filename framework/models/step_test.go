@@ -75,7 +75,7 @@ func TestGettingStringVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			"",
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 	}
 
@@ -113,7 +113,7 @@ func TestGettingIntegerVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -161,7 +161,7 @@ func TestGettingFloat32VariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -209,7 +209,7 @@ func TestGettingFloat64VariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -257,7 +257,7 @@ func TestGettingBooleanVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			false,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -305,7 +305,7 @@ func TestGettingStringArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]string{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 	}
 
@@ -343,7 +343,7 @@ func TestGettingIntegerArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]int{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -391,7 +391,7 @@ func TestGettingFloat32ArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]float32{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -439,7 +439,7 @@ func TestGettingFloat64ArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]float64{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -487,7 +487,7 @@ func TestGettingBooleanArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]bool{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -529,7 +529,7 @@ func TestVariableExistsFunction(t *testing.T) {
 	}{
 		{
 			[]string{"TEST", noExistEnvVar},
-			fmt.Errorf("Could not find variable with name '%s' in step.variables", noExistEnvVar),
+			fmt.Errorf("Could not find variable '%s' in step.variables", noExistEnvVar),
 		},
 		{
 			[]string{"TEST"},

@@ -61,7 +61,7 @@ func TestPullImageStepErrors(t *testing.T) {
 				},
 				Docker: docker,
 			},
-			fmt.Errorf("Could not find variable with name '%s' in step.variables", "IMAGE_NAME"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE_NAME"),
 		}, {
 			&models.Step{
 				Variables: map[string]string{
@@ -69,7 +69,7 @@ func TestPullImageStepErrors(t *testing.T) {
 				},
 				Docker: docker,
 			},
-			fmt.Errorf("Could not find variable with name '%s' in step.variables", "IMAGE_REPOSITORY"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE_REPOSITORY"),
 		},
 		{
 			&models.Step{
@@ -129,15 +129,27 @@ func TestBuildImageStepFails(t *testing.T) {
 	}{
 		{
 			&models.Step{
-				Variables: map[string]string{},
-				Docker:    docker,
+				Variables: map[string]string{
+					"IMAGE_NAME": "test",
+				},
+				Docker: docker,
 			},
-			fmt.Errorf("Could not find variable '%s' in step variables", "DOCKERFILE_NAME"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "DOCKERFILE"),
 		},
 		{
 			&models.Step{
 				Variables: map[string]string{
-					"DOCKERFILE_NAME": "DockerfileThatDoesNotExist",
+					"DOCKERFILE": "DockerfileThatDoesNotExist",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"DOCKERFILE": "DockerfileThatDoesNotExist",
+					"IMAGE_NAME": "test",
 				},
 				Docker: docker,
 			},
@@ -152,25 +164,27 @@ func TestBuildImageStepFails(t *testing.T) {
 }
 
 func TestBuildImageStepPasses(t *testing.T) {
+	SetDockerfilesRoot()
 	docker, err := docker.NewHandler()
 	assert.NoError(t, err)
-	dockerfileRootDir := GetDockerfilesRoot()
-	os.Setenv(util.DockerfileDirEnv, dockerfileRootDir)
 
 	step := &models.Step{
 		Variables: map[string]string{
-			"DOCKERFILE_NAME": "Dockerfile.simple",
+			"DOCKERFILE": "Dockerfile.simple",
+			"IMAGE_NAME": "test:e2e-test",
 		},
 		Docker: docker,
 	}
 
 	err = BuildImage(step)
-	os.Unsetenv(util.DockerfileDirEnv)
 	assert.NoError(t, err)
 }
 
-func GetDockerfilesRoot() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return fmt.Sprintf("%s/../Dockerfiles", filepath.Dir(d))
+func SetDockerfilesRoot() {
+	// If not in container, set as the path to the 'project's root/Dockerfiles'
+	if os.Getenv(util.DockerfileDirEnv) == "" {
+		_, b, _, _ := runtime.Caller(0)
+		d := path.Join(path.Dir(b))
+		os.Setenv(util.DockerfileDirEnv, fmt.Sprintf("%s/../Dockerfiles", filepath.Dir(d)))
+	}
 }

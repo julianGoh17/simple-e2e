@@ -7,6 +7,7 @@ WORK_DIR="/home/e2e"
 SIMPLE_E2E_PATH="$GOPATH/src/github.com/julianGoh17/simple-e2e/"
 
 export TEST_DIR="$WORK_DIR/tests"
+export DOCKERFILE_DIR="$WORK_DIR/Dockerfiles"
 
 echo "Building Simple-E2E binary..."
 cd "$SIMPLE_E2E_PATH/framework" || return

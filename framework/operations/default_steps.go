@@ -63,20 +63,23 @@ func PullImage(step *models.Step) error {
 
 // BuildImage will build the specified image from the specified Dockerfile located in the 'Dockerfiles' directory
 // Environmental Variables:
-// 	- DOCKERFILE_NAME: The name of the Dockerfile to be built
+// 	- DOCKERFILE: The name of the Dockerfile to be built
+//  - IMAGE_NAME: The build tag of the Docker image
 func BuildImage(step *models.Step) error {
 	traceStepEntrance(step)
-	dockerfile, err := step.GetValueFromVariablesAsString("DOCKERFILE_NAME")
-	if err != nil {
+	if err := step.CheckIfStepVariablesExists("DOCKERFILE", "IMAGE_NAME"); err != nil {
 		return err
 	}
+
+	dockerfile, _ := step.GetValueFromVariablesAsString("DOCKERFILE")
+	buildTag, _ := step.GetValueFromVariablesAsString("IMAGE_NAME")
 
 	build, err := createDockerfileBuild(dockerfile)
 
 	if err != nil {
 		return err
 	}
-	return traceStepExit(step, step.Docker.BuildImage(build, dockerfile))
+	return traceStepExit(step, step.Docker.BuildImage(build, dockerfile, buildTag))
 }
 
 func createDockerfileBuild(dockerfile string) (io.Reader, error) {
@@ -123,7 +126,7 @@ func traceStepEntrance(step *models.Step) {
 	for key, val := range step.Variables {
 		trace.Str(key, val)
 	}
-	trace.Msg("Step variables")
+	trace.Msg("Step.variables")
 	logger.Info().Str("description", step.Description).Msg("Beginning of step")
 }
 

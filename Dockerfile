@@ -23,7 +23,6 @@ RUN mkdir -p ${SIMPLE_E2E_PATH} && \
     mkdir /home/${USER}/tests
 
 COPY ./framework ${SIMPLE_E2E_PATH}/framework
-COPY ./tests ${SIMPLE_E2E_PATH}/tests
 
 VOLUME [ ${SIMPLE_E2E_PATH}/framework ]
 VOLUME [ /home/${USER}/tests ]
