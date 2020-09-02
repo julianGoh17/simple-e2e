@@ -1,15 +1,9 @@
 package operations
 
 import (
-	"archive/tar"
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 
 	"github.com/julianGoh17/simple-e2e/framework/models"
-	"github.com/julianGoh17/simple-e2e/framework/util"
 )
 
 func getDefaultSteps() map[string]func(step *models.Step) error {
@@ -74,51 +68,7 @@ func BuildImage(step *models.Step) error {
 	dockerfile, _ := step.GetValueFromVariablesAsString("DOCKERFILE")
 	buildTag, _ := step.GetValueFromVariablesAsString("IMAGE_NAME")
 
-	build, err := createDockerfileBuild(dockerfile)
-
-	if err != nil {
-		return err
-	}
-	return traceStepExit(step, step.Docker.BuildImage(build, dockerfile, buildTag))
-}
-
-func createDockerfileBuild(dockerfile string) (io.Reader, error) {
-	logger.Trace().Str("Dockerfile", dockerfile).Msg("Creating tar for dockerfile")
-	dockerfileBytes, err := readDockerfile(dockerfile)
-	if err != nil {
-		return nil, err
-	}
-	buf := new(bytes.Buffer)
-	tw := tar.NewWriter(buf)
-	defer tw.Close()
-	tarHeader := &tar.Header{
-		Name: dockerfile,
-		Size: int64(len(dockerfileBytes)),
-	}
-	err = tw.WriteHeader(tarHeader)
-	if err != nil {
-		return nil, err
-	}
-	_, err = tw.Write(dockerfileBytes)
-	if err != nil {
-		return nil, err
-	}
-	logger.Trace().Str("Dockerfile", dockerfile).Msg("Finished creating tar for dockerfile")
-	return bytes.NewReader(buf.Bytes()), nil
-}
-
-func readDockerfile(dockerfile string) ([]byte, error) {
-	logger.Trace().Str("Dockerfile", dockerfile).Msg("Reading dockerfile")
-	dockerfileReader, err := os.Open(getDockerfilePath(dockerfile))
-	if err != nil {
-		return nil, err
-	}
-	logger.Trace().Str("Dockerfile", dockerfile).Msg("Finished reading dockerfile")
-	return ioutil.ReadAll(dockerfileReader)
-}
-
-func getDockerfilePath(dockerfile string) string {
-	return fmt.Sprintf("%s/%s", config.GetOrDefault(util.DockerfileDirEnv), dockerfile)
+	return traceStepExit(step, step.Docker.BuildImage(dockerfile, buildTag))
 }
 
 func traceStepEntrance(step *models.Step) {
