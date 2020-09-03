@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-yaml/yaml"
+	"github.com/julianGoh17/simple-e2e/framework/internal"
+	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,10 +79,10 @@ func TestGlobalVariablesMultiStage(t *testing.T) {
 }
 
 func unmarshalYaml(fileName string, t *testing.T) Procedure {
+	internal.SetTestFilesRoot()
 	var procedure Procedure
-	filePath := getTestFileDirectory(fileName, t)
 
-	body, err := ioutil.ReadFile(filePath)
+	body, err := ioutil.ReadFile(fmt.Sprintf("%s/examples/%s.yaml", os.Getenv(util.TestDirEnv), fileName))
 	if err != nil {
 		t.Errorf("unable to read file: %v", err)
 	}
@@ -91,13 +93,4 @@ func unmarshalYaml(fileName string, t *testing.T) Procedure {
 	}
 
 	return procedure
-}
-
-func getTestFileDirectory(fileName string, t *testing.T) string {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Errorf("Error getting Test YAML because: %s", err)
-	}
-
-	return fmt.Sprintf("%s/../../tests/examples/%s.yaml", dir, fileName)
 }

@@ -20,13 +20,17 @@ WORKDIR /home/${USER}
 
 # Set up volume mount
 RUN mkdir -p ${SIMPLE_E2E_PATH} && \
-    mkdir /home/${USER}/tests
+    mkdir /home/${USER}/tests && \
+    mkdir /home/${USER}/Dockerfiles
 
 COPY ./framework ${SIMPLE_E2E_PATH}/framework
-COPY ./tests ${SIMPLE_E2E_PATH}/tests
+# Need to copy these for tests as Github action doesn't use volumes
+COPY ./tests /home/${USER}/tests
+COPY ./Dockerfiles /home/${USER}/Dockerfiles
 
 VOLUME [ ${SIMPLE_E2E_PATH}/framework ]
 VOLUME [ /home/${USER}/tests ]
+VOLUME [ /home/${USER}/Dockerfiles ]
 
 COPY "entrypoint.sh" "/entrypoint.sh"
 

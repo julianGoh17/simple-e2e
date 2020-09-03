@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,7 +76,7 @@ func TestGettingStringVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			"",
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 	}
 
@@ -113,7 +114,7 @@ func TestGettingIntegerVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -161,7 +162,7 @@ func TestGettingFloat32VariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -209,7 +210,7 @@ func TestGettingFloat64VariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			0,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -257,7 +258,7 @@ func TestGettingBooleanVariableFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			false,
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -305,7 +306,7 @@ func TestGettingStringArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]string{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 	}
 
@@ -343,7 +344,7 @@ func TestGettingIntegerArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]int{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -391,7 +392,7 @@ func TestGettingFloat32ArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]float32{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -439,7 +440,7 @@ func TestGettingFloat64ArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]float64{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -487,7 +488,7 @@ func TestGettingBooleanArrayFromStepVariables(t *testing.T) {
 				Variables:   map[string]string{},
 			},
 			[]bool{},
-			fmt.Errorf("Could not find variable '%s' in step variables", "TEST"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
 		},
 		{
 			&Step{
@@ -513,6 +514,40 @@ func TestGettingBooleanArrayFromStepVariables(t *testing.T) {
 	}
 }
 
+func TestVariableExistsFunction(t *testing.T) {
+	step := &Step{
+		Description: "This is a step",
+		Variables: map[string]string{
+			"TEST":   "RandomVariable",
+			"RANDOM": "RandomVariable",
+		},
+	}
+
+	noExistEnvVar := "NO_EXIST"
+	tables := []struct {
+		variablesToCheck []string
+		err              error
+	}{
+		{
+			[]string{"TEST", noExistEnvVar},
+			fmt.Errorf("Could not find variable '%s' in step.variables", noExistEnvVar),
+		},
+		{
+			[]string{"TEST"},
+			nil,
+		},
+		{
+			[]string{"TEST", "RANDOM"},
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		err := step.CheckIfStepVariablesExists(table.variablesToCheck...)
+		assert.Equal(t, table.err, err)
+	}
+}
+
 func TestHasSucceed(t *testing.T) {
 	step := &Step{}
 	assert.False(t, step.HasSucceeded())
@@ -532,18 +567,23 @@ func TestStepCanGetEnvVar(t *testing.T) {
 	assert.Equal(t, step.GetGlobalVariable(key), value)
 }
 
-func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
-	rc := m.Run()
+func TestStepPassesOrFailsTestCorrectlyDueToError(t *testing.T) {
+	step := &Step{}
+	errors := []error{
+		fmt.Errorf("Random Error"),
+		nil,
+	}
 
-	// rc 0 means we've passed,
-	// and CoverMode will be non empty if run with -cover
-	if rc == 0 && testing.CoverMode() != "" {
-		c := testing.Coverage()
-		if c < 0.85 {
-			fmt.Println("Tests passed but coverage failed at", c)
-			rc = -1
+	for _, err := range errors {
+		step.SetErrored(err)
+		if err != nil {
+			assert.Equal(t, false, step.HasSucceeded())
+		} else {
+			assert.Equal(t, true, step.HasSucceeded())
 		}
 	}
-	os.Exit(rc)
+}
+
+func TestMain(m *testing.M) {
+	internal.TestCoverageReaches85Percent(m)
 }

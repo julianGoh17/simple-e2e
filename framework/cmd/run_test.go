@@ -2,14 +2,11 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,25 +44,29 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
 
+	actualTestFilesDir := os.Getenv(util.TestDirEnv)
+	os.Setenv(util.TestDirEnv, "")
+
 	// Unsure why but need to capture output through setting output. Have tried doing it other way, but it won't capture output
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
-	rootCmd.SetArgs([]string{"run", "-t", "test"})
+	rootCmd.SetArgs([]string{"run", "-t", "non-existent-test"})
 	rootCmd.Execute()
 
 	out, err := ioutil.ReadAll(b)
 	stringedOutput := string(out)
 
 	assert.NoError(t, err)
-	assert.Contains(t, stringedOutput, "Error: unable to read file: open /test.yaml")
+	assert.Contains(t, stringedOutput, "Error: unable to read file: open /non-existent-test.yaml")
+	os.Setenv(util.TestDirEnv, actualTestFilesDir)
+
 }
 
 func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
+	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
-	testFileRoot := GetTestFilesRoot()
-	os.Setenv(util.TestDirEnv, testFileRoot)
 	read, written, rescue := beginCaptureOfTerminalOutput()
 
 	rootCmd.SetArgs([]string{"run", "-t", "test"})
@@ -77,15 +78,13 @@ func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
 	assert.Contains(t, output, "Hello there Coachella!")
 	assert.Contains(t, output, "Hello there Eugene!")
 	assert.Contains(t, output, "Hello there Boy!")
-	os.Unsetenv(util.TestDirEnv)
 }
 
 func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
+	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
-	testFileRoot := GetTestFilesRoot()
-	os.Setenv(util.TestDirEnv, testFileRoot)
 	read, written, rescue := beginCaptureOfTerminalOutput()
 
 	rootCmd.SetArgs([]string{"run", "-t", "test", "-s", "stage1"})
@@ -97,12 +96,6 @@ func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
 	assert.Contains(t, output, "Hello there Coachella!")
 	assert.NotContains(t, output, "Hello there Eugene!")
 	assert.NotContains(t, output, "Hello there Boy!")
-}
-
-func GetTestFilesRoot() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return fmt.Sprintf("%s/../tests", filepath.Dir(d))
 }
 
 func beginCaptureOfTerminalOutput() (*os.File, *os.File, *os.File) {

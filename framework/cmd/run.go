@@ -24,7 +24,11 @@ func NewRunCmd() *cobra.Command {
 		Long:  `Run all the steps in a specified test or just a specific set of stages from that test.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			util.ConfigureGlobalLogLevel(verbosity)
-			controller = operations.NewController()
+			// TODO: add documentation that says that each run should be stateless
+			controller, err := operations.NewController()
+			if err != nil {
+				return err
+			}
 			stage := []string{}
 			if stages != "" {
 				stage = strings.Split(stages, ",")

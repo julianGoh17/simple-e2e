@@ -10,6 +10,8 @@ type GlobalConfig struct {
 const (
 	// TestDirEnv is the env var key for the root test file directory
 	TestDirEnv = "TEST_DIR"
+	// DockerfileDirEnv is the env var key for the root Dockerfile directory
+	DockerfileDirEnv = "DOCKERFILE_DIR"
 )
 
 // NewConfig object returns the config object initialized with the default values
@@ -29,7 +31,8 @@ func (config *GlobalConfig) GetOrDefault(key string) string {
 
 func initializeConfig(config *GlobalConfig) {
 	config.defaults = map[string]string{
-		TestDirEnv: "/home/e2e",
+		TestDirEnv:       "/home/e2e/tests",
+		DockerfileDirEnv: "/home/e2e/Dockerfiles",
 	}
 }
 

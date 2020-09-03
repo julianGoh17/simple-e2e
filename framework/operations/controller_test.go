@@ -3,12 +3,12 @@ package operations
 import (
 	"errors"
 	"fmt"
-	"path"
-	"path/filepath"
-	"runtime"
+	"os"
 	"testing"
 
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	models "github.com/julianGoh17/simple-e2e/framework/models"
+	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,7 +56,8 @@ description: example description
 `
 
 func TestYamlFormatting(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 
 	testFileOutcomes := []struct {
 		testFile  string
@@ -79,16 +80,16 @@ func TestYamlFormatting(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	controller := NewController()
-
-	testFilesRoot := GetTestFilesRoot()
+	internal.SetTestFilesRoot()
+	controller, err := NewController()
+	assert.NoError(t, err)
 
 	tables := []struct {
 		testFile     string
 		testLocation string
 		willError    bool
 	}{
-		{"test.yaml", testFilesRoot, false},
+		{"test.yaml", os.Getenv(util.TestDirEnv), false},
 		{"test.yaml", "random", true},
 	}
 
@@ -148,7 +149,8 @@ func TestRunStages(t *testing.T) {
 	}
 
 	for _, outcome := range testFileOutcomes {
-		controller := NewController()
+		controller, err := NewController()
+		assert.NoError(t, err)
 		assert.NoError(t, controller.AddTestStep("example-step", outcome.testFunction))
 		if outcome.willError {
 			assert.Error(t, controller.runTest([]byte(outcome.testFile), outcome.stages...))
@@ -159,13 +161,15 @@ func TestRunStages(t *testing.T) {
 }
 
 func TestWillRunAlwaysRunsEvenWhenFail(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 	assert.NoError(t, controller.AddTestStep("example-step", testFuncFailStep))
 	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 
 func TestFailsWhenCanNotGetStep(t *testing.T) {
-	controller := NewController()
+	controller, err := NewController()
+	assert.NoError(t, err)
 	assert.Error(t, controller.runTest([]byte(multiStageRun)))
 }
 
@@ -181,10 +185,4 @@ func testFuncFailStep(step *models.Step) error {
 
 func testFuncErrorStep(step *models.Step) error {
 	return errors.New("This will error")
-}
-
-func GetTestFilesRoot() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return fmt.Sprintf("%s/../tests", filepath.Dir(d))
 }

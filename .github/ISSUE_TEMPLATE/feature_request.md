@@ -16,3 +16,7 @@ If possible, propose a solution to how you would tackle the problem.
 ## How does this tie into the current project
 
 Describe whether this request is related to an existing workflow, feature, or otherwise something in the project today. Or, does this open us up to new markets and innovative ideas?
+
+## Definition of Done
+
+- [ ] Create a checklist of things for an issue to be considered done
