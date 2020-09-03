@@ -2,14 +2,11 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -66,7 +63,7 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 }
 
 func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
-	SetTestFilesRoot()
+	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
@@ -84,7 +81,7 @@ func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
 }
 
 func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
-	SetTestFilesRoot()
+	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
@@ -99,15 +96,6 @@ func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
 	assert.Contains(t, output, "Hello there Coachella!")
 	assert.NotContains(t, output, "Hello there Eugene!")
 	assert.NotContains(t, output, "Hello there Boy!")
-}
-
-func SetTestFilesRoot() {
-	// If not in container, set as the path to the 'project's root/tests'
-	if os.Getenv(util.TestDirEnv) == "" {
-		_, b, _, _ := runtime.Caller(0)
-		d := path.Join(path.Dir(b))
-		os.Setenv(util.TestDirEnv, fmt.Sprintf("%s/../tests", filepath.Dir(d)))
-	}
 }
 
 func beginCaptureOfTerminalOutput() (*os.File, *os.File, *os.File) {

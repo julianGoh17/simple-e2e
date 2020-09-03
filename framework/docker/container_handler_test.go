@@ -4,12 +4,9 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,7 +50,7 @@ func TestPullImage(t *testing.T) {
 }
 
 func TestReadDockerfileFailsWhenDockerfileCanNotBeFound(t *testing.T) {
-	SetDockerfilesRoot()
+	internal.SetDockerfilesRoot()
 	bytes, err := readDockerfile(nonExistentDockerfile)
 	assert.Error(t, err)
 	assert.Equal(t, []byte(nil), bytes)
@@ -104,7 +101,7 @@ func TestWriteTarBytesFails(t *testing.T) {
 }
 
 func TestBuildImageFails(t *testing.T) {
-	SetDockerfilesRoot()
+	internal.SetDockerfilesRoot()
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 
@@ -114,7 +111,7 @@ func TestBuildImageFails(t *testing.T) {
 }
 
 func TestBuildDockerfilePasses(t *testing.T) {
-	SetDockerfilesRoot()
+	internal.SetDockerfilesRoot()
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 	err = handler.BuildImage(actualDockerfile, "test")
@@ -131,39 +128,17 @@ func TestCreateDockerfileFails(t *testing.T) {
 }
 
 func TestReadDockerfileFailsWhenDockerfilePasses(t *testing.T) {
-	SetDockerfilesRoot()
+	internal.SetDockerfilesRoot()
 	bytes, err := readDockerfile(actualDockerfile)
 	assert.NoError(t, err)
 	assert.NotNil(t, bytes)
 }
 
 func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
-	rc := m.Run()
-
-	// rc 0 means we've passed,
-	// and CoverMode will be non empty if run with -cover
-	if rc == 0 && testing.CoverMode() != "" {
-		c := testing.Coverage()
-		if c < 0.85 {
-			fmt.Println("Tests passed but coverage failed at", c)
-			rc = -1
-		}
-	}
-	os.Exit(rc)
+	internal.TestCoverageReaches85Percent(m)
 }
 
 func createTarWriterAndBuffer() (*tar.Writer, *bytes.Buffer) {
 	buf := new(bytes.Buffer)
 	return tar.NewWriter(buf), buf
-}
-
-// TODO: figure out a way to have this imported as a function in all test packages to prevent copying and pasting this method and SetTestfilesRoot
-func SetDockerfilesRoot() {
-	// If not in container, set as the path to the 'project's root/Dockerfiles'
-	if os.Getenv(util.DockerfileDirEnv) == "" {
-		_, b, _, _ := runtime.Caller(0)
-		d := path.Join(path.Dir(b))
-		os.Setenv(util.DockerfileDirEnv, fmt.Sprintf("%s/../Dockerfiles", filepath.Dir(d)))
-	}
 }
