@@ -7,7 +7,9 @@ import (
 	"os"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/rs/zerolog"
 )
 
 // WrapperClient is the framework's wrapper for the Docker client which will be used to create docker images
@@ -65,7 +67,38 @@ func (wrapper *WrapperClient) BuildImage(ctx context.Context, buildContext io.Re
 	logger.Trace().
 		Str("Image", buildOptions.Tags[0]).
 		Bool("hasSuccessfullyBuiltDockerfile", true).
-		Msg("Successfully built docker image")
+		Msg("Successfully built Docker image")
+	return nil
+}
+
+// CreateContainer will create a container with a specified configuration (but this does not start any processes in the container)
+func (wrapper *WrapperClient) CreateContainer(ctx context.Context, config *container.Config, containerName string) (container.ContainerCreateCreatedBody, error) {
+	beginningLog := traceCreateContainer(config)
+	beginningLog.Msg("Creating Docker container")
+
+	// Note for the future, to set up container to container communication may need to pass in host config
+	resp, err := wrapper.Cli.ContainerCreate(ctx, config, nil, nil, nil, containerName)
+	if err != nil {
+		return resp, traceExitCreateContainerError(err, config, "Failed to create Docker container")
+	}
+
+	return resp, traceExitCreateContainerError(err, config, "Successfully created Docker container")
+}
+
+// DeleteContainer will kill and remove a container (started or running) from the host's docker daemon
+func (wrapper *WrapperClient) DeleteContainer(ctx context.Context, containerID string) error {
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Beginning to delete container")
+
+	if err := wrapper.Cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{}); err != nil {
+		logger.Trace().Err(err).Str("containerID", containerID).Msg("Failed to delete container")
+		return err
+	}
+
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Successfully deleted container")
 	return nil
 }
 
@@ -81,4 +114,16 @@ func traceExitOfBuildingImageForError(err error, buildOptions types.ImageBuildOp
 		Bool("hasSuccessfullyBuiltDockerfile", false).
 		Msg(msg)
 	return err
+}
+
+func traceExitCreateContainerError(err error, config *container.Config, msg string) error {
+	event := traceCreateContainer(config)
+	event.Err(err).Msg(msg)
+	return err
+}
+
+func traceCreateContainer(config *container.Config) *zerolog.Event {
+	return logger.Trace().
+		Str("image", config.Image).
+		Strs("environmentalVariables", config.Env)
 }
