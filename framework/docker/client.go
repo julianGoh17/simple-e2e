@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -34,7 +35,7 @@ func (wrapper *WrapperClient) Initialize() error {
 func (wrapper *WrapperClient) Close() error {
 	logger.Trace().Msg("Closing Framework's Docker client")
 	if err := wrapper.Cli.Close(); err != nil {
-		return traceExitOfError(wrapper.Cli.Close(), "Failed to close Framework's Docker client")
+		return traceExitOfError(err, "Failed to close Framework's Docker client")
 	}
 	return traceExitOfError(nil, "Successfully closed Framework's Docker client")
 }
@@ -102,9 +103,44 @@ func (wrapper *WrapperClient) DeleteContainer(ctx context.Context, containerID s
 	return nil
 }
 
+// ListContainers will list all the existing containers on the host daemon
+func (wrapper *WrapperClient) ListContainers(ctx context.Context) ([]types.Container, error) {
+	logger.Trace().
+		Msg("Beginning to list containers on host daemon")
+
+	containers, err := wrapper.Cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+	if err != nil {
+		logger.Trace().Err(err).Msg("Failed to list containers on host daemon")
+		return nil, err
+	}
+
+	logger.Trace().
+		Strs("containerIDs", getContainerIDs(containers)).
+		Strs("containerNames", getContainerNames(containers)).
+		Msg("Successfully listed container")
+	return containers, nil
+}
+
 func readOutputAndCloseReader(reader io.ReadCloser) error {
 	io.Copy(os.Stdout, reader)
 	return reader.Close()
+}
+
+func getContainerIDs(containers []types.Container) []string {
+	ids := []string{}
+	for _, container := range containers {
+		ids = append(ids, container.ID)
+	}
+	return ids
+}
+
+func getContainerNames(containers []types.Container) []string {
+	ids := []string{}
+	for _, container := range containers {
+		ids = append(ids, strings.Join(container.Names, "/"))
+	}
+
+	return ids
 }
 
 func traceExitOfBuildingImageForError(err error, buildOptions types.ImageBuildOptions, msg string) error {

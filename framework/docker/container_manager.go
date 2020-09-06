@@ -31,3 +31,12 @@ func NewContainerManager(image, containerName, containerID string) *ContainerMan
 		containerID:     containerID,
 	}
 }
+
+// NewSimpleContainerManager will return a Container Manager intialized for a specified name and id without the image
+func NewSimpleContainerManager(containerName, containerID string) *ContainerManager {
+	return &ContainerManager{
+		containerName:   containerName,
+		containerStatus: Created,
+		containerID:     containerID,
+	}
+}

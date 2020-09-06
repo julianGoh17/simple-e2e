@@ -3,7 +3,9 @@ package docker
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/rs/zerolog/log"
@@ -31,6 +33,10 @@ func NewHandler() (*Handler, error) {
 		return nil, traceExitOfError(err, "Failed to create new Docker handler")
 	}
 	handler.wrapper.Cli.NegotiateAPIVersion(ctx)
+
+	if err := handler.initializeContainerManagers(); err != nil {
+		return nil, traceExitOfError(err, "Failed to initialize container managers")
+	}
 
 	logger.Trace().Msg("Successfully created new Docker handler")
 	return handler, nil
@@ -101,6 +107,50 @@ func (handler *Handler) DeleteContainer(containerName string) error {
 	logger.Trace().
 		Str("containerName", containerName).
 		Msg("Successfully deleted container and corresponding container manager")
+	return nil
+}
+
+// MapContainersNamesAndIDs will create a map of container name to container ID of all containers currently on the host daemon
+func (handler *Handler) MapContainersNamesAndIDs() (map[string]string, error) {
+	logger.Trace().
+		Msg("Attemping to list containers")
+
+	ctx := context.Background()
+	containers, err := handler.wrapper.ListContainers(ctx)
+	if err != nil {
+		logger.Trace().
+			Err(err).
+			Msg("Failed to list containers")
+		return nil, err
+	}
+
+	logger.Trace().Strs("containers", getContainerNames(containers)).Msg("Successfully listed containers")
+
+	return getContainerNamesAndIDs(containers), nil
+}
+
+func getContainerNamesAndIDs(containers []types.Container) map[string]string {
+	namesAndIDs := make(map[string]string)
+	for _, container := range containers {
+		namesAndIDs[strings.Join(container.Names, "/")] = container.ID
+	}
+
+	return namesAndIDs
+}
+
+func (handler *Handler) initializeContainerManagers() error {
+	logger.Trace().Msg("Attempting to initialize container managers")
+
+	containerNamesAndIDs, err := handler.MapContainersNamesAndIDs()
+	if err != nil {
+		logger.Trace().Err(err).Msg("Failed to initialize container managers")
+	}
+
+	for name, id := range containerNamesAndIDs {
+		handler.containerManagers[name] = NewSimpleContainerManager(name, id)
+	}
+
+	logger.Trace().Msg("Successfully initialized contianer managers")
 	return nil
 }
 

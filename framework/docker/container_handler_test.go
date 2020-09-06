@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/docker/docker/api/types"
 	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +22,8 @@ func TestNewHandlerHasNoNils(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, handler)
 	assert.NotNil(t, handler.wrapper)
-	assert.Len(t, handler.containerManagers, 0)
+	// Depending on Host Daemon's containers could have multiple containers running
+	assert.GreaterOrEqual(t, len(handler.containerManagers), 0)
 }
 
 func TestNewHandlerFailsToInitialize(t *testing.T) {
@@ -99,14 +101,15 @@ func TestHandlerCreateAndDeleteContainerPasses(t *testing.T) {
 	containerName := "test"
 
 	err = handler.CreateContainer(existingImage, containerName)
+	containersBeforeDeletion := len(handler.containerManagers)
 	assert.NoError(t, err)
-	assert.Len(t, handler.containerManagers, 1)
+	assert.Greater(t, containersBeforeDeletion, 0)
 	assert.NotNil(t, handler.containerManagers[containerName])
 
 	// Need to delete container for this to work, as there will be a created container that does nothing
 	err = handler.DeleteContainer(containerName)
 	assert.NoError(t, err)
-	assert.Len(t, handler.containerManagers, 0)
+	assert.Less(t, len(handler.containerManagers), containersBeforeDeletion)
 	assert.Nil(t, handler.containerManagers[containerName])
 }
 
@@ -136,6 +139,73 @@ func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
 		err := handler.DeleteContainer(testCase.containerName)
 		assert.Error(t, err)
 		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestMapContainerNamesAndIDsFails(t *testing.T) {
+	os.Setenv(dockerHostEnv, invalidDockerHost)
+	defer os.Unsetenv(dockerHostEnv)
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+
+	containers, err := handler.MapContainersNamesAndIDs()
+	assert.Error(t, err)
+	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Nil(t, containers)
+}
+
+func TestMapContainerNamesAndIDsPasses(t *testing.T) {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+
+	containerName := "test"
+
+	err = handler.CreateContainer(existingImage, containerName)
+	assert.NoError(t, err)
+	assert.Greater(t, len(handler.containerManagers), 0)
+	assert.NotNil(t, handler.containerManagers[containerName])
+
+	containers, err := handler.MapContainersNamesAndIDs()
+	assert.NoError(t, err)
+	assert.Greater(t, len(containers), 0)
+	assert.NotNil(t, containers[containerName])
+
+	err = handler.DeleteContainer(containerName)
+	assert.NoError(t, err)
+	assert.Less(t, len(handler.containerManagers), len(containers))
+	assert.Nil(t, handler.containerManagers[containerName])
+}
+
+func TestGetContainerNamesAndIDs(t *testing.T) {
+	testCases := []struct {
+		containers          []types.Container
+		expectedNamesAndIDs map[string]string
+	}{
+		{
+			[]types.Container{
+				{
+					Names: []string{"first", "second"},
+					ID:    "firstID",
+				},
+				{
+					Names: []string{"third", "fourth"},
+					ID:    "secondID",
+				},
+			},
+			map[string]string{
+				"first/second": "firstID",
+				"third/fourth": "secondID",
+			},
+		},
+		{
+			[]types.Container{},
+			make(map[string]string),
+		},
+	}
+
+	for _, testCase := range testCases {
+		namesAndIDs := getContainerNamesAndIDs(testCase.containers)
+		assert.Equal(t, testCase.expectedNamesAndIDs, namesAndIDs)
 	}
 }
 

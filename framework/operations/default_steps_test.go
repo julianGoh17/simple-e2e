@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	existingImage = "docker.io/library/alpine"
+)
+
 func TestSayHelloToStep(t *testing.T) {
 	tables := []struct {
 		step      *models.Step
@@ -61,11 +65,11 @@ func TestPullImageStepErrors(t *testing.T) {
 				},
 				Docker: docker,
 			},
-			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE_NAME"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE"),
 		}, {
 			&models.Step{
 				Variables: map[string]string{
-					"IMAGE_NAME": "alpine",
+					"IMAGE": "alpine",
 				},
 				Docker: docker,
 			},
@@ -75,7 +79,7 @@ func TestPullImageStepErrors(t *testing.T) {
 			&models.Step{
 				Variables: map[string]string{
 					"IMAGE_REPOSITORY": "docker.io/library",
-					"IMAGE_NAME":       "blah",
+					"IMAGE":            "blah",
 					"IMAGE_TAG":        "invalid-image-tag",
 				},
 				Docker: docker,
@@ -99,7 +103,7 @@ func TestPullImageStepPasses(t *testing.T) {
 		{
 			Variables: map[string]string{
 				"IMAGE_REPOSITORY": "docker.io/library",
-				"IMAGE_NAME":       "alpine",
+				"IMAGE":            "alpine",
 				"IMAGE_TAG":        "latest",
 			},
 			Docker: docker,
@@ -107,7 +111,7 @@ func TestPullImageStepPasses(t *testing.T) {
 		{
 			Variables: map[string]string{
 				"IMAGE_REPOSITORY": "docker.io/library",
-				"IMAGE_NAME":       "alpine",
+				"IMAGE":            "alpine",
 			},
 			Docker: docker,
 		},
@@ -130,7 +134,7 @@ func TestBuildImageStepFails(t *testing.T) {
 		{
 			&models.Step{
 				Variables: map[string]string{
-					"IMAGE_NAME": "test",
+					"IMAGE": "test",
 				},
 				Docker: docker,
 			},
@@ -143,13 +147,13 @@ func TestBuildImageStepFails(t *testing.T) {
 				},
 				Docker: docker,
 			},
-			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE_NAME"),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE"),
 		},
 		{
 			&models.Step{
 				Variables: map[string]string{
 					"DOCKERFILE": "DockerfileThatDoesNotExist",
-					"IMAGE_NAME": "test",
+					"IMAGE":      "test",
 				},
 				Docker: docker,
 			},
@@ -163,6 +167,81 @@ func TestBuildImageStepFails(t *testing.T) {
 	}
 }
 
+func TestCreateContainerStepFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"IMAGE": "test",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": "test",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "IMAGE"),
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := CreateContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestDeleteContainerStepFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{},
+				Docker:    docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := DeleteContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestCreateAndDeleteContainerStepPasses(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	step := &models.Step{
+		Variables: map[string]string{
+			"CONTAINER_NAME": "test-container",
+			"IMAGE":          existingImage,
+		},
+		Docker: docker,
+	}
+
+	assert.NoError(t, CreateContainer(step))
+	assert.NoError(t, DeleteContainer(step))
+}
+
 func TestBuildImageStepPasses(t *testing.T) {
 	SetDockerfilesRoot()
 	docker, err := docker.NewHandler()
@@ -171,7 +250,7 @@ func TestBuildImageStepPasses(t *testing.T) {
 	step := &models.Step{
 		Variables: map[string]string{
 			"DOCKERFILE": "Dockerfile.simple",
-			"IMAGE_NAME": "test:e2e-test",
+			"IMAGE":      "test:e2e-test",
 		},
 		Docker: docker,
 	}
