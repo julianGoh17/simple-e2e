@@ -1,8 +1,14 @@
 package cmd
 
 import (
+	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+var (
+	verbosity string
+	config    = util.GlobalConfig{}
 )
 
 // NewRootCmd returns the root cli as an object to be interacted with
@@ -19,8 +25,13 @@ func NewRootCmd() *cobra.Command {
 
 // InitRootCmd configures the root comand with the basic information and adds the other commands into the binary
 func InitRootCmd(rootCmd *cobra.Command) {
-	rootCmd.PersistentFlags().StringP("author", "a", "Julian Goh", "author name for copyright attribution")
 	rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
+	rootCmd.PersistentFlags().StringVarP(&verbosity, "verbosity", "v", "", `Increase the verbosity of the binary by passing in one of the following levels:
+	info: Will log basic events (default)
+	debug: Will increase logging level to show what step and stage is being called
+	trace: Will increase logging level to show debug level + more
+		`)
+
 	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
 	viper.SetDefault("license", "apache")
@@ -30,4 +41,7 @@ func InitRootCmd(rootCmd *cobra.Command) {
 
 	runCmd := NewRunCmd()
 	initRunCmd(rootCmd, runCmd)
+
+	listCmd := NewListCmd()
+	initListCmd(rootCmd, listCmd)
 }

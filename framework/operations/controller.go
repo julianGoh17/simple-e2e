@@ -191,3 +191,17 @@ func runStep(function func(*model.Step) error, step model.Step) error {
 		Msg("Finished running to run step")
 	return nil
 }
+
+// GetContainerNamesAndIDs will return a map of container names to container ids
+func (controller *Controller) GetContainerNamesAndIDs() (map[string]string, error) {
+	logger.Trace().Msg("Getting container names and ids")
+	namesAndIds, err := controller.docker.MapContainersNamesAndIDs()
+	if err != nil {
+		logger.Trace().
+			Err(err).
+			Msg("Failed to get container names and ids")
+		return nil, err
+	}
+	logger.Trace().Msg("Successfully retrieved container names and ids")
+	return namesAndIds, nil
+}
