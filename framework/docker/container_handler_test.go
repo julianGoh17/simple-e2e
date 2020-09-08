@@ -1,13 +1,12 @@
 package docker
 
 import (
-	"archive/tar"
-	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
+	"github.com/docker/docker/api/types"
 	"github.com/julianGoh17/simple-e2e/framework/internal"
-	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,15 +14,34 @@ const (
 	actualDockerfile      = "Dockerfile.simple"
 	nonExistentDockerfile = "non-existent-Dockerfile"
 	closedReaderError     = "archive/tar: write after close"
+	existingImage         = "docker.io/library/alpine"
 )
 
-func TestPullImage(t *testing.T) {
+func TestNewHandlerHasNoNils(t *testing.T) {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+	assert.NotNil(t, handler)
+	assert.NotNil(t, handler.wrapper)
+	// Depending on Host Daemon's containers could have multiple containers running
+	assert.GreaterOrEqual(t, len(handler.containerManagers), 0)
+}
+
+func TestNewHandlerFailsToInitialize(t *testing.T) {
+	os.Setenv("DOCKER_HOST", "random-host")
+	handler, err := NewHandler()
+	assert.Nil(t, handler)
+	assert.Error(t, err)
+	assert.Equal(t, "unable to parse docker host `random-host`", err.Error())
+	os.Unsetenv("DOCKER_HOST")
+}
+
+func TestHandlerPullImage(t *testing.T) {
 	testCases := []struct {
 		image string
 		err   error
 	}{
 		{
-			"docker.io/library/alpine",
+			existingImage,
 			nil,
 		},
 		{
@@ -49,96 +67,163 @@ func TestPullImage(t *testing.T) {
 	}
 }
 
-func TestReadDockerfileFailsWhenDockerfileCanNotBeFound(t *testing.T) {
-	internal.SetDockerfilesRoot()
-	bytes, err := readDockerfile(nonExistentDockerfile)
-	assert.Error(t, err)
-	assert.Equal(t, []byte(nil), bytes)
-	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), nonExistentDockerfile), err.Error())
-}
+func TestHandlerCreateContainerFails(t *testing.T) {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+	alreadyAddedContainer := "already-added"
 
-func TestWriteTarHeaderFailsAndPasses(t *testing.T) {
-	tw, _ := createTarWriterAndBuffer()
-	errors := []error{
-		nil,
-		fmt.Errorf(closedReaderError),
+	handler.containerManagers[alreadyAddedContainer] = &ContainerManager{}
+
+	testCases := []struct {
+		containerName string
+		err           error
+	}{
+		{
+			alreadyAddedContainer,
+			fmt.Errorf("container with name '%s' already exists", alreadyAddedContainer),
+		},
+		{
+			"random-client",
+			fmt.Errorf("Error response from daemon: No such image: random-image:latest"),
+		},
 	}
 
-	for _, err := range errors {
-		if err != nil {
-			tw.Close()
-		}
-		err := writeTarHeader(nonExistentDockerfile, []byte{}, tw)
-		if err != nil {
-			assert.Error(t, err)
-			assert.Equal(t, err.Error(), closedReaderError)
-		} else {
-			assert.NoError(t, err)
-			assert.Nil(t, err)
-		}
-	}
-}
-func TestWriteTarBytesFails(t *testing.T) {
-	tw, _ := createTarWriterAndBuffer()
-	errors := []error{
-		nil,
-		fmt.Errorf(closedReaderError),
-	}
-
-	for _, err := range errors {
-		if err != nil {
-			tw.Close()
-		}
-		err := writeTarBytes(nonExistentDockerfile, []byte{}, tw)
-		if err != nil {
-			assert.Error(t, err)
-			assert.Equal(t, err.Error(), closedReaderError)
-		} else {
-			assert.NoError(t, err)
-			assert.Nil(t, err)
-		}
+	for _, testCase := range testCases {
+		err := handler.CreateContainer("random-image", testCase.containerName)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
 	}
 }
 
-func TestBuildImageFails(t *testing.T) {
-	internal.SetDockerfilesRoot()
+func TestHandlerCreateAndDeleteContainerPasses(t *testing.T) {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+	containerName := "test"
+
+	err = handler.CreateContainer(existingImage, containerName)
+	containersBeforeDeletion := len(handler.containerManagers)
+	assert.NoError(t, err)
+	assert.Greater(t, containersBeforeDeletion, 0)
+	assert.NotNil(t, handler.containerManagers[containerName])
+
+	// Need to delete container for this to work, as there will be a created container that does nothing
+	err = handler.DeleteContainer(containerName)
+	assert.NoError(t, err)
+	assert.Less(t, len(handler.containerManagers), containersBeforeDeletion)
+	assert.Nil(t, handler.containerManagers[containerName])
+}
+
+func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+	existingContainerName := "existing"
+	nonExistentContainerID := "non-existent-id"
+	nonExistentContainerName := "non-existent"
+	handler.containerManagers[existingContainerName] = &ContainerManager{containerInfo: &ContainerInfo{ID: nonExistentContainerID}}
+
+	testCases := []struct {
+		containerName string
+		err           error
+	}{
+		{
+			nonExistentContainerName,
+			fmt.Errorf("Could not find container '%s' in Framework registry", nonExistentContainerName),
+		},
+		{
+			existingContainerName,
+			fmt.Errorf("Error: No such container: %s", nonExistentContainerID),
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := handler.DeleteContainer(testCase.containerName)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestMapContainerNamesAndIDsFails(t *testing.T) {
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 
-	err = handler.BuildImage(nonExistentDockerfile, "test")
+	containers, err := handler.GetContainerInfo(true)
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), nonExistentDockerfile), err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+	assert.Nil(t, containers)
 }
 
-func TestBuildDockerfilePasses(t *testing.T) {
-	internal.SetDockerfilesRoot()
+func TestMapContainerNamesAndIDsPasses(t *testing.T) {
 	handler, err := NewHandler()
 	assert.NoError(t, err)
-	err = handler.BuildImage(actualDockerfile, "test")
+
+	containerName := "test"
+
+	err = handler.CreateContainer(existingImage, containerName)
 	assert.NoError(t, err)
+	assert.Greater(t, len(handler.containerManagers), 0)
+	assert.NotNil(t, handler.containerManagers[containerName])
+
+	containers, err := handler.GetContainerInfo(true)
+	assert.NoError(t, err)
+	assert.Greater(t, len(containers), 0)
+
+	hasListedCreatedContainer := false
+	for _, container := range containers {
+		hasListedCreatedContainer = container.Name == "/"+containerName
+		if hasListedCreatedContainer {
+			break
+		}
+	}
+
+	assert.Equal(t, true, hasListedCreatedContainer, "Could not find created container in the listed containers")
+
+	err = handler.DeleteContainer(containerName)
+	assert.NoError(t, err)
+	assert.Less(t, len(handler.containerManagers), len(containers))
+	assert.Nil(t, handler.containerManagers[containerName])
 }
 
-func TestCreateDockerfileFails(t *testing.T) {
-	tw, buf := createTarWriterAndBuffer()
-	tw.Close()
-	reader, err := createDockerfileBuild(nonExistentDockerfile, []byte{}, tw, buf)
-	assert.Error(t, err)
-	assert.Equal(t, closedReaderError, err.Error())
-	assert.Nil(t, reader)
-}
+func TestGetContainerNamesAndIDs(t *testing.T) {
+	testCases := []struct {
+		containers []types.Container
+		expected   []*ContainerInfo
+	}{
+		{
+			[]types.Container{
+				{
+					Names: []string{"first", "second"},
+					ID:    "firstID",
+				},
+				{
+					Names: []string{"third", "fourth"},
+					ID:    "secondID",
+				},
+			},
+			[]*ContainerInfo{
+				{
+					Name: "first/second",
+					ID:   "firstID",
+				},
+				{
+					Name: "third/fourth",
+					ID:   "secondID",
+				},
+			},
+		},
+		{
+			[]types.Container{},
+			[]*ContainerInfo{},
+		},
+	}
 
-func TestReadDockerfileFailsWhenDockerfilePasses(t *testing.T) {
-	internal.SetDockerfilesRoot()
-	bytes, err := readDockerfile(actualDockerfile)
-	assert.NoError(t, err)
-	assert.NotNil(t, bytes)
+	for _, testCase := range testCases {
+		containerInfo := convertToContainerInfo(testCase.containers)
+		assert.Equal(t, testCase.expected, containerInfo)
+	}
 }
 
 func TestMain(m *testing.M) {
 	internal.TestCoverageReaches85Percent(m)
-}
-
-func createTarWriterAndBuffer() (*tar.Writer, *bytes.Buffer) {
-	buf := new(bytes.Buffer)
-	return tar.NewWriter(buf), buf
 }

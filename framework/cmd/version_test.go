@@ -10,12 +10,11 @@ import (
 
 func TestVersionCommand(t *testing.T) {
 	rootCmd := NewRootCmd()
-	versionCmd := NewVersionCmd()
-	initVersionCmd(rootCmd, versionCmd)
+	InitRootCmd(rootCmd)
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
 	rootCmd.SetArgs([]string{"version"})
-	rootCmd.Execute()
+	assert.NoError(t, rootCmd.Execute())
 	out, err := ioutil.ReadAll(b)
 	stringedOutput := string(out)
 

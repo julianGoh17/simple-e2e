@@ -22,9 +22,10 @@ func TestInitRootCmd(t *testing.T) {
 	rootCmd := NewRootCmd()
 	InitRootCmd(rootCmd)
 
-	assert.Equal(t, 2, len(rootCmd.Commands()))
-	assert.Equal(t, "run", rootCmd.Commands()[0].Use)
-	assert.Equal(t, "version", rootCmd.Commands()[1].Use)
+	assert.Equal(t, 3, len(rootCmd.Commands()))
+	assert.Equal(t, "list", rootCmd.Commands()[0].Use)
+	assert.Equal(t, "run", rootCmd.Commands()[1].Use)
+	assert.Equal(t, "version", rootCmd.Commands()[2].Use)
 }
 
 func TestMain(m *testing.M) {

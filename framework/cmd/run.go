@@ -10,10 +10,8 @@ import (
 )
 
 var (
-	stages    string
-	test      string
-	verbosity string
-	config    = util.GlobalConfig{}
+	stages string
+	test   string
 )
 
 // NewRunCmd returns the run command as a cobra object to be interacted with
@@ -44,12 +42,6 @@ func initRunCmd(rootCmd, runCmd *cobra.Command) {
 	runCmd.Flags().StringVarP(&stages, "stages", "s", "", `A comma separated list of stages to run from that test.
 For example to only run 'stage1' from a test, add '-s stage1' to your command.
 	`)
-	runCmd.Flags().StringVarP(&verbosity, "verbosity", "v", "", `Increase the verbosity of the binary by passing in one of the following levels:
-info: Will log basic events (default)
-debug: Will increase logging level to show what step and stage is being called
-trace: Will increase logging level to show debug level + more
-	`)
-
 	runCmd.MarkFlagRequired("test")
 	rootCmd.AddCommand(runCmd)
 }

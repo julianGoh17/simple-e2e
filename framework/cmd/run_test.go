@@ -23,14 +23,13 @@ func TestRunCmdValues(t *testing.T) {
 
 func TestRunCmdFailsWhenNoArgumentsPassedIn(t *testing.T) {
 	rootCmd := NewRootCmd()
-	runCmd := NewRunCmd()
-	initRunCmd(rootCmd, runCmd)
+	InitRootCmd(rootCmd)
 
 	// Unsure why but need to capture output through setting output. Have tried doing it other way, but it won't capture output
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
 	rootCmd.SetArgs([]string{"run"})
-	rootCmd.Execute()
+	assert.Error(t, rootCmd.Execute())
 
 	out, err := ioutil.ReadAll(b)
 	stringedOutput := string(out)
@@ -41,8 +40,7 @@ func TestRunCmdFailsWhenNoArgumentsPassedIn(t *testing.T) {
 
 func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 	rootCmd := NewRootCmd()
-	runCmd := NewRunCmd()
-	initRunCmd(rootCmd, runCmd)
+	InitRootCmd(rootCmd)
 
 	actualTestFilesDir := os.Getenv(util.TestDirEnv)
 	os.Setenv(util.TestDirEnv, "")
@@ -51,7 +49,7 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 	b := bytes.NewBufferString("")
 	rootCmd.SetOut(b)
 	rootCmd.SetArgs([]string{"run", "-t", "non-existent-test"})
-	rootCmd.Execute()
+	assert.Error(t, rootCmd.Execute())
 
 	out, err := ioutil.ReadAll(b)
 	stringedOutput := string(out)
@@ -62,15 +60,26 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 
 }
 
+func TestRunCmdFailsWhenCanNotInitializeDockerHandler(t *testing.T) {
+	os.Setenv(internal.DockerHostEnv, internal.InvalidDockerHost)
+	rootCmd := NewRootCmd()
+	InitRootCmd(rootCmd)
+
+	rootCmd.SetArgs([]string{"run", "-t", "test"})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Equal(t, internal.ErrInvalidHost.Error(), err.Error())
+	os.Unsetenv(internal.DockerHostEnv)
+}
+
 func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
 	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
-	runCmd := NewRunCmd()
-	initRunCmd(rootCmd, runCmd)
+	InitRootCmd(rootCmd)
 	read, written, rescue := beginCaptureOfTerminalOutput()
 
 	rootCmd.SetArgs([]string{"run", "-t", "test"})
-	rootCmd.Execute()
+	assert.NoError(t, rootCmd.Execute())
 
 	output := endCaptureOfTerminalOutput(read, written, rescue)
 
@@ -83,12 +92,12 @@ func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {
 func TestRunCmdPassWhenCanFindValidTestFileAndRunningFewStages(t *testing.T) {
 	internal.SetTestFilesRoot()
 	rootCmd := NewRootCmd()
-	runCmd := NewRunCmd()
-	initRunCmd(rootCmd, runCmd)
+	InitRootCmd(rootCmd)
+
 	read, written, rescue := beginCaptureOfTerminalOutput()
 
 	rootCmd.SetArgs([]string{"run", "-t", "test", "-s", "stage1"})
-	rootCmd.Execute()
+	assert.NoError(t, rootCmd.Execute())
 
 	output := endCaptureOfTerminalOutput(read, written, rescue)
 

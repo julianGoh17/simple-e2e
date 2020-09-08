@@ -8,9 +8,11 @@ import (
 
 func getDefaultSteps() map[string]func(step *models.Step) error {
 	defaultSteps := map[string]func(step *models.Step) error{
-		"Say hello to": SayHelloTo,
-		"Pull image":   PullImage,
-		"Build image":  BuildImage,
+		"Say hello to":     SayHelloTo,
+		"Pull image":       PullImage,
+		"Build image":      BuildImage,
+		"Create container": CreateContainer,
+		"Delete container": DeleteContainer,
 	}
 
 	return defaultSteps
@@ -36,15 +38,15 @@ func SayHelloTo(step *models.Step) error {
 // PullImage will pull an image from a specified location onto the host machines daemon
 // Environmental Variables:
 // 	- IMAGE_REPOSITORY: The docker image repository to pull from
-// 	- IMAGE_NAME: The name of the actual image to pull from
+// 	- IMAGE: The name of the actual image to pull from
 // 	- IMAGE_TAG: The image tag which is used to specify which version of the image to pull (if not set then will not do anything)
 func PullImage(step *models.Step) error {
-	if err := step.CheckIfStepVariablesExists("IMAGE_REPOSITORY", "IMAGE_NAME"); err != nil {
-		return err
+	if err := step.CheckIfStepVariablesExists("IMAGE_REPOSITORY", "IMAGE"); err != nil {
+		return traceStepExit(step, err)
 	}
 
 	imageLocation, _ := step.GetValueFromVariablesAsString("IMAGE_REPOSITORY")
-	imageName, _ := step.GetValueFromVariablesAsString("IMAGE_NAME")
+	imageName, _ := step.GetValueFromVariablesAsString("IMAGE")
 	imageTag, _ := step.GetValueFromVariablesAsString("IMAGE_TAG")
 
 	image := fmt.Sprintf("%s/%s", imageLocation, imageName)
@@ -58,17 +60,46 @@ func PullImage(step *models.Step) error {
 // BuildImage will build the specified image from the specified Dockerfile located in the 'Dockerfiles' directory
 // Environmental Variables:
 // 	- DOCKERFILE: The name of the Dockerfile to be built
-//  - IMAGE_NAME: The build tag of the Docker image
+//  - IMAGE: The name to give the built image
 func BuildImage(step *models.Step) error {
 	traceStepEntrance(step)
-	if err := step.CheckIfStepVariablesExists("DOCKERFILE", "IMAGE_NAME"); err != nil {
-		return err
+	if err := step.CheckIfStepVariablesExists("DOCKERFILE", "IMAGE"); err != nil {
+		return traceStepExit(step, err)
 	}
 
 	dockerfile, _ := step.GetValueFromVariablesAsString("DOCKERFILE")
-	buildTag, _ := step.GetValueFromVariablesAsString("IMAGE_NAME")
+	buildTag, _ := step.GetValueFromVariablesAsString("IMAGE")
 
 	return traceStepExit(step, step.Docker.BuildImage(dockerfile, buildTag))
+}
+
+// CreateContainer will create a container (but will not run the container) from an image and create a ContainerManager to manage that Container
+// Environmental Variables:
+// 	- IMAGE: The name of the image to create the container with
+//  - CONTAINER_NAME: The name to give to the created container
+func CreateContainer(step *models.Step) error {
+	traceStepEntrance(step)
+	if err := step.CheckIfStepVariablesExists("IMAGE", "CONTAINER_NAME"); err != nil {
+		return traceStepExit(step, err)
+	}
+
+	image, _ := step.GetValueFromVariablesAsString("IMAGE")
+	containerName, _ := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+
+	return traceStepExit(step, step.Docker.CreateContainer(image, containerName))
+}
+
+// DeleteContainer will delete a container (that has been registered with the framework) based on the container name given.
+// Environmental Variables:
+//  - CONTAINER_NAME: The name of the container to delete
+func DeleteContainer(step *models.Step) error {
+	traceStepEntrance(step)
+
+	containerName, err := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	if err != nil {
+		return traceStepExit(step, err)
+	}
+	return traceStepExit(step, step.Docker.DeleteContainer(containerName))
 }
 
 func traceStepEntrance(step *models.Step) {
