@@ -27,9 +27,45 @@ func TestMapContainerStatusToString(t *testing.T) {
 			Errored,
 			"Errored",
 		},
+		{
+			Exited,
+			"Exited",
+		},
 	}
 
 	for _, testCase := range testCases {
 		assert.Equal(t, testCase.expectedString, MapContainerStatusToString(testCase.status))
+	}
+}
+
+func TestMapStateToStatus(t *testing.T) {
+	testCases := []struct {
+		str            string
+		expectedStatus ContainerStatus
+	}{
+		{
+			"created",
+			Created,
+		},
+		{
+			"running",
+			Running,
+		},
+		{
+			"completed",
+			Completed,
+		},
+		{
+			"errored",
+			Errored,
+		},
+		{
+			"exited",
+			Exited,
+		},
+	}
+
+	for _, testCase := range testCases {
+		assert.Equal(t, testCase.expectedStatus, MapStateToStatus(testCase.str))
 	}
 }

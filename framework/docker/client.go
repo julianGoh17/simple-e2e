@@ -104,11 +104,12 @@ func (wrapper *WrapperClient) DeleteContainer(ctx context.Context, containerID s
 }
 
 // ListContainers will list all the existing containers on the host daemon
-func (wrapper *WrapperClient) ListContainers(ctx context.Context) ([]types.Container, error) {
+func (wrapper *WrapperClient) ListContainers(ctx context.Context, showAll bool) ([]types.Container, error) {
 	logger.Trace().
+		Bool("showAll", showAll).
 		Msg("Beginning to list containers on host daemon")
 
-	containers, err := wrapper.Cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+	containers, err := wrapper.Cli.ContainerList(ctx, types.ContainerListOptions{All: showAll})
 	if err != nil {
 		logger.Trace().Err(err).Msg("Failed to list containers on host daemon")
 		return nil, err

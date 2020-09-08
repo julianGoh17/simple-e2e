@@ -22,12 +22,11 @@ func NewListCmd() *cobra.Command {
 		Long:  `Lists the container names and IDs running on the host's daemon`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			util.ConfigureGlobalLogLevel(verbosity)
-			// TODO: Add ability to control to show all containers/running containers and show state of containers
 			controller, err := operations.NewController()
 			if err != nil {
 				return err
 			}
-			namesAndIDs, err := controller.GetContainerInfo()
+			namesAndIDs, err := controller.GetContainerInfo(allFlag)
 			if err != nil {
 				return err
 			}

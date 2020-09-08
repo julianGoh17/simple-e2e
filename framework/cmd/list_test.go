@@ -45,7 +45,7 @@ func TestListCommandFails(t *testing.T) {
 	os.Unsetenv(internal.DockerHostEnv)
 }
 
-func TestListCommandListsRunningDockerContainers(t *testing.T) {
+func TestListCommandListsAllRunningDockerContainers(t *testing.T) {
 	handler, err := docker.NewHandler()
 	assert.NoError(t, err)
 
@@ -54,7 +54,7 @@ func TestListCommandListsRunningDockerContainers(t *testing.T) {
 	assert.NoError(t, handler.PullImage(internal.ExistingImage))
 	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName))
 
-	containers, err := handler.GetContainerInfo()
+	containers, err := handler.GetContainerInfo(true)
 	assert.NoError(t, err)
 
 	defer handler.DeleteContainer(containerName)
@@ -63,7 +63,7 @@ func TestListCommandListsRunningDockerContainers(t *testing.T) {
 	InitRootCmd(rootCmd)
 	read, written, rescue := beginCaptureOfTerminalOutput()
 
-	rootCmd.SetArgs([]string{"list"})
+	rootCmd.SetArgs([]string{"list", "-a", "true"})
 	assert.NoError(t, rootCmd.Execute())
 
 	output := endCaptureOfTerminalOutput(read, written, rescue)
@@ -72,7 +72,39 @@ func TestListCommandListsRunningDockerContainers(t *testing.T) {
 		assert.Contains(t, output, container.Name)
 		assert.Contains(t, output, container.ID)
 		assert.Contains(t, output, docker.MapContainerStatusToString(container.Status))
+	}
+}
 
+func TestListCommandListsCertainDockerContainers(t *testing.T) {
+	handler, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	containerName := "test"
+
+	assert.NoError(t, handler.PullImage(internal.ExistingImage))
+	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName))
+
+	containers, err := handler.GetContainerInfo(false)
+	assert.NoError(t, err)
+
+	defer handler.DeleteContainer(containerName)
+
+	rootCmd := NewRootCmd()
+	InitRootCmd(rootCmd)
+	read, written, rescue := beginCaptureOfTerminalOutput()
+
+	rootCmd.SetArgs([]string{"list", "-a", "false"})
+	assert.NoError(t, rootCmd.Execute())
+
+	output := endCaptureOfTerminalOutput(read, written, rescue)
+
+	for _, container := range containers {
+		assert.NotEqual(t, docker.Completed, container.Status)
+		assert.NotEqual(t, docker.Exited, container.Status)
+		assert.Contains(t, output, container.Name)
+		assert.Contains(t, output, container.ID)
+		assert.NotContains(t, output, docker.MapContainerStatusToString(docker.Completed))
+		assert.Contains(t, output, docker.MapContainerStatusToString(container.Status))
 	}
 }
 

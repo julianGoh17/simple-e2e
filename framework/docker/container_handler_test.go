@@ -148,7 +148,7 @@ func TestMapContainerNamesAndIDsFails(t *testing.T) {
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 
-	containers, err := handler.GetContainerInfo()
+	containers, err := handler.GetContainerInfo(true)
 	assert.Error(t, err)
 	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 	assert.Nil(t, containers)
@@ -165,7 +165,7 @@ func TestMapContainerNamesAndIDsPasses(t *testing.T) {
 	assert.Greater(t, len(handler.containerManagers), 0)
 	assert.NotNil(t, handler.containerManagers[containerName])
 
-	containers, err := handler.GetContainerInfo()
+	containers, err := handler.GetContainerInfo(true)
 	assert.NoError(t, err)
 	assert.Greater(t, len(containers), 0)
 

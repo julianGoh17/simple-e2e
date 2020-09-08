@@ -115,20 +115,25 @@ func (handler *Handler) DeleteContainer(containerName string) error {
 }
 
 // GetContainerInfo will return a list of ContainerInfo objects gathered from the host machine
-func (handler *Handler) GetContainerInfo() ([]*ContainerInfo, error) {
+func (handler *Handler) GetContainerInfo(showAll bool) ([]*ContainerInfo, error) {
 	logger.Trace().
+		Bool("showAll", showAll).
 		Msg("Attemping to list containers")
 
 	ctx := context.Background()
-	containers, err := handler.wrapper.ListContainers(ctx)
+	containers, err := handler.wrapper.ListContainers(ctx, showAll)
 	if err != nil {
 		logger.Trace().
 			Err(err).
+			Bool("showAll", showAll).
 			Msg("Failed to list containers")
 		return nil, err
 	}
 
-	logger.Trace().Strs("containers", getContainerNames(containers)).Msg("Successfully listed containers")
+	logger.Trace().
+		Bool("showAll", showAll).
+		Strs("containers", getContainerNames(containers)).
+		Msg("Successfully listed containers")
 
 	return convertToContainerInfo(containers), nil
 }
@@ -136,7 +141,7 @@ func (handler *Handler) GetContainerInfo() ([]*ContainerInfo, error) {
 func convertToContainerInfo(containers []types.Container) []*ContainerInfo {
 	infos := []*ContainerInfo{}
 	for _, container := range containers {
-		infos = append(infos, &ContainerInfo{Name: strings.Join(container.Names, "/"), ID: container.ID, Image: container.Image})
+		infos = append(infos, &ContainerInfo{Name: strings.Join(container.Names, "/"), ID: container.ID, Image: container.Image, Status: MapStateToStatus(container.State)})
 	}
 
 	return infos
@@ -145,12 +150,12 @@ func convertToContainerInfo(containers []types.Container) []*ContainerInfo {
 func (handler *Handler) initializeContainerManagers() error {
 	logger.Trace().Msg("Attempting to initialize container managers")
 
-	containerNamesAndIDs, err := handler.GetContainerInfo()
+	containerInfos, err := handler.GetContainerInfo(true)
 	if err != nil {
 		logger.Trace().Err(err).Msg("Failed to initialize container managers")
 	}
 
-	for _, containerInfo := range containerNamesAndIDs {
+	for _, containerInfo := range containerInfos {
 		handler.containerManagers[containerInfo.Name] = &ContainerManager{image: containerInfo.Image, containerInfo: containerInfo}
 	}
 

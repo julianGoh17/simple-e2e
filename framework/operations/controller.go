@@ -193,15 +193,20 @@ func runStep(function func(*model.Step) error, step model.Step) error {
 }
 
 // GetContainerInfo will return a list of ContainerInfo containing information about containers present on the host's daemon
-func (controller *Controller) GetContainerInfo() ([]*docker.ContainerInfo, error) {
-	logger.Trace().Msg("Getting container names and ids")
-	namesAndIds, err := controller.docker.GetContainerInfo()
+func (controller *Controller) GetContainerInfo(showAll bool) ([]*docker.ContainerInfo, error) {
+	logger.Trace().
+		Bool("showAll", showAll).
+		Msg("Attempting to get container info")
+	namesAndIds, err := controller.docker.GetContainerInfo(showAll)
 	if err != nil {
 		logger.Trace().
 			Err(err).
-			Msg("Failed to get container names and ids")
+			Bool("showAll", showAll).
+			Msg("Failed to get container info")
 		return nil, err
 	}
-	logger.Trace().Msg("Successfully retrieved container names and ids")
+	logger.Trace().
+		Bool("showAll", showAll).
+		Msg("Successfully retrieved container info")
 	return namesAndIds, nil
 }

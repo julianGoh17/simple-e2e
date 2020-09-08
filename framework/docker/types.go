@@ -12,6 +12,8 @@ const (
 	Completed
 	// Errored means that the container has errored in someway
 	Errored
+	// Exited means that the container was running but a process inside closed the container
+	Exited
 )
 
 // MapContainerStatusToString will convert the container status to string
@@ -25,8 +27,26 @@ func MapContainerStatusToString(status ContainerStatus) string {
 		return "Completed"
 	case Errored:
 		return "Errored"
+	case Exited:
+		return "Exited"
 	default:
 		return ""
+	}
+}
+
+// MapStateToStatus will convert the string container state to ContainerStatus enum
+func MapStateToStatus(status string) ContainerStatus {
+	switch status {
+	case "running":
+		return Running
+	case "completed":
+		return Completed
+	case "errored":
+		return Errored
+	case "exited":
+		return Exited
+	default:
+		return Created
 	}
 }
 

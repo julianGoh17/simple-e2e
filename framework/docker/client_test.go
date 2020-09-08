@@ -78,7 +78,7 @@ func TestWrapperClientListContainersFail(t *testing.T) {
 	client := createClient(t)
 
 	ctx := context.Background()
-	containers, err := client.ListContainers(ctx)
+	containers, err := client.ListContainers(ctx, false)
 	assert.Error(t, err)
 	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 	assert.Nil(t, containers)
