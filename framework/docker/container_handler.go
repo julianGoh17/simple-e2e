@@ -75,7 +75,11 @@ func (handler *Handler) CreateContainer(image, containerName string) error {
 		return traceExitCreateContainerAndContainerManagerError(err, image, containerName, "Failed to create container")
 	}
 
-	handler.containerManagers[containerName] = NewContainerManager(image, containerName, resp.ID)
+	handler.containerManagers[containerName] = &ContainerManager{image: image, containerInfo: &ContainerInfo{
+		Name:  containerName,
+		ID:    resp.ID,
+		Image: image,
+	}}
 
 	logger.Trace().
 		Str("image", image).
@@ -98,8 +102,8 @@ func (handler *Handler) DeleteContainer(containerName string) error {
 
 	manager := handler.containerManagers[containerName]
 	ctx := context.Background()
-	if err := handler.wrapper.DeleteContainer(ctx, manager.containerID); err != nil {
-		return traceExitDeleteContainerAndContainerManagerError(err, containerName, manager.containerID, "Failed to delete container")
+	if err := handler.wrapper.DeleteContainer(ctx, manager.containerInfo.ID); err != nil {
+		return traceExitDeleteContainerAndContainerManagerError(err, containerName, manager.containerInfo.ID, "Failed to delete container")
 	}
 
 	delete(handler.containerManagers, containerName)
@@ -110,8 +114,8 @@ func (handler *Handler) DeleteContainer(containerName string) error {
 	return nil
 }
 
-// MapContainersNamesAndIDs will create a map of container name to container ID of all containers currently on the host daemon
-func (handler *Handler) MapContainersNamesAndIDs() (map[string]string, error) {
+// GetContainerInfo will return a list of ContainerInfo objects gathered from the host machine
+func (handler *Handler) GetContainerInfo() ([]*ContainerInfo, error) {
 	logger.Trace().
 		Msg("Attemping to list containers")
 
@@ -126,28 +130,28 @@ func (handler *Handler) MapContainersNamesAndIDs() (map[string]string, error) {
 
 	logger.Trace().Strs("containers", getContainerNames(containers)).Msg("Successfully listed containers")
 
-	return getContainerNamesAndIDs(containers), nil
+	return convertToContainerInfo(containers), nil
 }
 
-func getContainerNamesAndIDs(containers []types.Container) map[string]string {
-	namesAndIDs := make(map[string]string)
+func convertToContainerInfo(containers []types.Container) []*ContainerInfo {
+	infos := []*ContainerInfo{}
 	for _, container := range containers {
-		namesAndIDs[strings.Join(container.Names, "/")] = container.ID
+		infos = append(infos, &ContainerInfo{Name: strings.Join(container.Names, "/"), ID: container.ID, Image: container.Image})
 	}
 
-	return namesAndIDs
+	return infos
 }
 
 func (handler *Handler) initializeContainerManagers() error {
 	logger.Trace().Msg("Attempting to initialize container managers")
 
-	containerNamesAndIDs, err := handler.MapContainersNamesAndIDs()
+	containerNamesAndIDs, err := handler.GetContainerInfo()
 	if err != nil {
 		logger.Trace().Err(err).Msg("Failed to initialize container managers")
 	}
 
-	for name, id := range containerNamesAndIDs {
-		handler.containerManagers[name] = NewSimpleContainerManager(name, id)
+	for _, containerInfo := range containerNamesAndIDs {
+		handler.containerManagers[containerInfo.Name] = &ContainerManager{image: containerInfo.Image, containerInfo: containerInfo}
 	}
 
 	logger.Trace().Msg("Successfully initialized contianer managers")

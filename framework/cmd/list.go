@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/julianGoh17/simple-e2e/framework/docker"
 	"github.com/julianGoh17/simple-e2e/framework/operations"
 	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/olekukonko/tablewriter"
@@ -21,12 +22,12 @@ func NewListCmd() *cobra.Command {
 		Long:  `Lists the container names and IDs running on the host's daemon`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			util.ConfigureGlobalLogLevel(verbosity)
-			// TODO: Add ability to controll to show all containers/running containers and show state of containers
+			// TODO: Add ability to control to show all containers/running containers and show state of containers
 			controller, err := operations.NewController()
 			if err != nil {
 				return err
 			}
-			namesAndIDs, err := controller.GetContainerNamesAndIDs()
+			namesAndIDs, err := controller.GetContainerInfo()
 			if err != nil {
 				return err
 			}
@@ -45,14 +46,14 @@ func initListCmd(rootCmd, listCmd *cobra.Command) {
 	rootCmd.AddCommand(listCmd)
 }
 
-func getTable(namesAndIDs map[string]string) *tablewriter.Table {
+func getTable(containers []*docker.ContainerInfo) *tablewriter.Table {
 	table := tablewriter.NewWriter(os.Stdout)
 
-	table.SetHeader([]string{"Container Name", "Container ID"})
+	table.SetHeader([]string{"Container Name", "Container ID", "Container Status"})
 	table.SetBorder(false)
 
-	for name, id := range namesAndIDs {
-		table.Append([]string{name, id})
+	for _, container := range containers {
+		table.Append([]string{container.Name, container.ID, docker.MapContainerStatusToString(container.Status)})
 	}
 
 	return table

@@ -15,6 +15,24 @@ import (
 	"github.com/julianGoh17/simple-e2e/framework/util"
 )
 
+const (
+	// ExistingImage points to an existing docker image that can be used
+	ExistingImage = "docker.io/library/alpine"
+	// InvalidDockerHost will cause the Docker client to error on creation
+	InvalidDockerHost = "random-host"
+	// UnconnectableDockerHost  will cause the client to talk to an invalid Docker daemon
+	UnconnectableDockerHost = "http://localhost:9091"
+	// DockerHostEnv is the env var key name
+	DockerHostEnv = "DOCKER_HOST"
+)
+
+var (
+	// ErrInvalidHost is the error that occurs when the Docker client starts up with the InvalidDockerHost const
+	ErrInvalidHost = fmt.Errorf("unable to parse docker host `random-host`")
+	// ErrCanNotConnectToHost is the error that occurs when the Docker client tries to connect the daemon on UncconnectableDockerHost
+	ErrCanNotConnectToHost = fmt.Errorf("Cannot connect to the Docker daemon at %s. Is the docker daemon running?", UnconnectableDockerHost)
+)
+
 // SetDockerfilesRoot will set 'DOCKERFILES_DIR' env to the path to the 'project's root/Dockerfiles' if it's not already set
 func SetDockerfilesRoot() {
 	// If not in container, set as the path to the 'project's root/Dockerfiles'

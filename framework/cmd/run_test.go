@@ -61,15 +61,15 @@ func TestRunCmdFailsWhenCanNotFindFile(t *testing.T) {
 }
 
 func TestRunCmdFailsWhenCanNotInitializeDockerHandler(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidHost)
+	os.Setenv(internal.DockerHostEnv, internal.InvalidDockerHost)
 	rootCmd := NewRootCmd()
 	InitRootCmd(rootCmd)
 
 	rootCmd.SetArgs([]string{"run", "-t", "test"})
 	err := rootCmd.Execute()
 	assert.Error(t, err)
-	assert.Equal(t, invalidHostError, err.Error())
-	os.Unsetenv(dockerHostEnv)
+	assert.Equal(t, internal.ErrInvalidHost.Error(), err.Error())
+	os.Unsetenv(internal.DockerHostEnv)
 }
 
 func TestRunCmdPassWhenCanFindValidTestFile(t *testing.T) {

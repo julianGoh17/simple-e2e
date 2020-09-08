@@ -119,7 +119,7 @@ func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
 	existingContainerName := "existing"
 	nonExistentContainerID := "non-existent-id"
 	nonExistentContainerName := "non-existent"
-	handler.containerManagers[existingContainerName] = &ContainerManager{containerID: nonExistentContainerID}
+	handler.containerManagers[existingContainerName] = &ContainerManager{containerInfo: &ContainerInfo{ID: nonExistentContainerID}}
 
 	testCases := []struct {
 		containerName string
@@ -143,14 +143,14 @@ func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
 }
 
 func TestMapContainerNamesAndIDsFails(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 
-	containers, err := handler.MapContainersNamesAndIDs()
+	containers, err := handler.GetContainerInfo()
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 	assert.Nil(t, containers)
 }
 
@@ -165,10 +165,19 @@ func TestMapContainerNamesAndIDsPasses(t *testing.T) {
 	assert.Greater(t, len(handler.containerManagers), 0)
 	assert.NotNil(t, handler.containerManagers[containerName])
 
-	containers, err := handler.MapContainersNamesAndIDs()
+	containers, err := handler.GetContainerInfo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(containers), 0)
-	assert.NotNil(t, containers[containerName])
+
+	hasListedCreatedContainer := false
+	for _, container := range containers {
+		hasListedCreatedContainer = container.Name == "/"+containerName
+		if hasListedCreatedContainer {
+			break
+		}
+	}
+
+	assert.Equal(t, true, hasListedCreatedContainer, "Could not find created container in the listed containers")
 
 	err = handler.DeleteContainer(containerName)
 	assert.NoError(t, err)
@@ -178,8 +187,8 @@ func TestMapContainerNamesAndIDsPasses(t *testing.T) {
 
 func TestGetContainerNamesAndIDs(t *testing.T) {
 	testCases := []struct {
-		containers          []types.Container
-		expectedNamesAndIDs map[string]string
+		containers []types.Container
+		expected   []*ContainerInfo
 	}{
 		{
 			[]types.Container{
@@ -192,20 +201,26 @@ func TestGetContainerNamesAndIDs(t *testing.T) {
 					ID:    "secondID",
 				},
 			},
-			map[string]string{
-				"first/second": "firstID",
-				"third/fourth": "secondID",
+			[]*ContainerInfo{
+				{
+					Name: "first/second",
+					ID:   "firstID",
+				},
+				{
+					Name: "third/fourth",
+					ID:   "secondID",
+				},
 			},
 		},
 		{
 			[]types.Container{},
-			make(map[string]string),
+			[]*ContainerInfo{},
 		},
 	}
 
 	for _, testCase := range testCases {
-		namesAndIDs := getContainerNamesAndIDs(testCase.containers)
-		assert.Equal(t, testCase.expectedNamesAndIDs, namesAndIDs)
+		containerInfo := convertToContainerInfo(testCase.containers)
+		assert.Equal(t, testCase.expected, containerInfo)
 	}
 }
 

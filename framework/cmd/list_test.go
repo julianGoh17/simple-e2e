@@ -1,25 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/julianGoh17/simple-e2e/framework/docker"
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	// TODO: move this into test tools
-	existingImage           = "docker.io/library/alpine"
-	invalidHost             = "random-host"
-	unconnectableDockerHost = "http://localhost:9091"
-	dockerHostEnv           = "DOCKER_HOST"
-	invalidHostError        = "unable to parse docker host `random-host`"
-)
-
-var (
-	canNotConnectToHostError = fmt.Sprintf("Cannot connect to the Docker daemon at %s. Is the docker daemon running?", unconnectableDockerHost)
 )
 
 func TestListCmd(t *testing.T) {
@@ -36,17 +23,17 @@ func TestListCommandFails(t *testing.T) {
 		err  error
 	}{
 		{
-			invalidHost,
-			fmt.Errorf(invalidHostError),
+			internal.InvalidDockerHost,
+			internal.ErrInvalidHost,
 		},
 		{
-			unconnectableDockerHost,
-			fmt.Errorf(canNotConnectToHostError),
+			internal.UnconnectableDockerHost,
+			internal.ErrCanNotConnectToHost,
 		},
 	}
 
 	for _, testCase := range testCases {
-		os.Setenv(dockerHostEnv, testCase.host)
+		os.Setenv(internal.DockerHostEnv, testCase.host)
 		rootCmd := NewRootCmd()
 		InitRootCmd(rootCmd)
 
@@ -55,7 +42,7 @@ func TestListCommandFails(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, testCase.err.Error(), err.Error())
 	}
-	os.Unsetenv(dockerHostEnv)
+	os.Unsetenv(internal.DockerHostEnv)
 }
 
 func TestListCommandListsRunningDockerContainers(t *testing.T) {
@@ -64,10 +51,10 @@ func TestListCommandListsRunningDockerContainers(t *testing.T) {
 
 	containerName := "test"
 
-	err = handler.CreateContainer(existingImage, containerName)
-	assert.NoError(t, err)
+	assert.NoError(t, handler.PullImage(internal.ExistingImage))
+	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName))
 
-	namesAndIDs, err := handler.MapContainersNamesAndIDs()
+	containers, err := handler.GetContainerInfo()
 	assert.NoError(t, err)
 
 	defer handler.DeleteContainer(containerName)
@@ -81,17 +68,23 @@ func TestListCommandListsRunningDockerContainers(t *testing.T) {
 
 	output := endCaptureOfTerminalOutput(read, written, rescue)
 
-	for name, ids := range namesAndIDs {
-		assert.Contains(t, output, ids)
-		assert.Contains(t, output, name)
+	for _, container := range containers {
+		assert.Contains(t, output, container.Name)
+		assert.Contains(t, output, container.ID)
+		assert.Contains(t, output, docker.MapContainerStatusToString(container.Status))
+
 	}
 }
 
 func TestGetTable(t *testing.T) {
-	namesAndIDs := map[string]string{
-		"name": "id",
+	containers := []*docker.ContainerInfo{
+		{
+			Name:   "test",
+			ID:     "id",
+			Status: docker.Completed,
+		},
 	}
 
-	table := getTable(namesAndIDs)
+	table := getTable(containers)
 	assert.Equal(t, table.NumLines(), 1)
 }

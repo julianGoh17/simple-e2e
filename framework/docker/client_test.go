@@ -2,31 +2,22 @@ package docker
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	invalidDockerHost = "http://localhost:9090"
-	dockerHostEnv     = "DOCKER_HOST"
-)
-
-var (
-	canNotConnectToHostError = fmt.Sprintf("Cannot connect to the Docker daemon at %s. Is the docker daemon running?", invalidDockerHost)
 )
 
 func TestWrapperClientFailsToInitialize(t *testing.T) {
 	client := WrapperClient{}
-	os.Setenv(dockerHostEnv, "random-host")
+	os.Setenv(internal.DockerHostEnv, internal.InvalidDockerHost)
 	err := client.Initialize()
 	assert.Error(t, err)
-	assert.Equal(t, "unable to parse docker host `random-host`", err.Error())
-	os.Unsetenv(dockerHostEnv)
+	assert.Equal(t, internal.ErrInvalidHost.Error(), err.Error())
+	os.Unsetenv(internal.DockerHostEnv)
 }
 
 func TestWrapperClientCanClose(t *testing.T) {
@@ -35,8 +26,8 @@ func TestWrapperClientCanClose(t *testing.T) {
 }
 
 func TestWrapperClientBuildImageFails(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	client := createClient(t)
 
 	ctx := context.Background()
@@ -44,52 +35,52 @@ func TestWrapperClientBuildImageFails(t *testing.T) {
 		Tags: []string{"failed image"},
 	})
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 }
 
 func TestWrapperClientPullImageFails(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	client := createClient(t)
 
 	ctx := context.Background()
 	err := client.PullImage(ctx, "random-image")
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 }
 
 func TestWrapperClientCreateContainerFails(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	client := createClient(t)
 
 	ctx := context.Background()
 	res, err := client.CreateContainer(ctx, &container.Config{}, "random-container")
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 	assert.Equal(t, container.ContainerCreateCreatedBody{}, res)
 }
 
 func TestWrapperClientDeleteContainerFails(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	client := createClient(t)
 
 	ctx := context.Background()
 	err := client.DeleteContainer(ctx, "random-id")
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 }
 
 func TestWrapperClientListContainersFail(t *testing.T) {
-	os.Setenv(dockerHostEnv, invalidDockerHost)
-	defer os.Unsetenv(dockerHostEnv)
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	client := createClient(t)
 
 	ctx := context.Background()
 	containers, err := client.ListContainers(ctx)
 	assert.Error(t, err)
-	assert.Equal(t, canNotConnectToHostError, err.Error())
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
 	assert.Nil(t, containers)
 }
 
