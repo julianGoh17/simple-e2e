@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -84,9 +85,46 @@ func TestWrapperClientListContainersFail(t *testing.T) {
 	assert.Nil(t, containers)
 }
 
+func TestWrapperClientStartContainerFails(t *testing.T) {
+	client := createClient(t)
+
+	ctx := context.Background()
+	err := client.StartContainer(ctx, internal.NonExistentContainerID)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", internal.NonExistentContainerID), err.Error())
+}
+
+func TestWrapperClientPauseContainerFails(t *testing.T) {
+	client := createClient(t)
+
+	ctx := context.Background()
+	err := client.PauseContainer(ctx, internal.NonExistentContainerID)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", internal.NonExistentContainerID), err.Error())
+}
+
+func TestWrapperClientStopContainerFails(t *testing.T) {
+	client := createClient(t)
+
+	ctx := context.Background()
+	err := client.StopContainer(ctx, internal.NonExistentContainerID, &internal.TestDuration)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", internal.NonExistentContainerID), err.Error())
+}
+
+func TestWrapperClientRestartContainerFails(t *testing.T) {
+	client := createClient(t)
+
+	ctx := context.Background()
+	err := client.RestartContainer(ctx, internal.NonExistentContainerID, &internal.TestDuration)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", internal.NonExistentContainerID), err.Error())
+}
+
 func createClient(t *testing.T) WrapperClient {
 	client := WrapperClient{}
-	err := client.Initialize()
-	assert.NoError(t, err)
+	assert.NoError(t, client.Initialize())
+	ctx := context.Background()
+	client.Cli.NegotiateAPIVersion(ctx)
 	return client
 }

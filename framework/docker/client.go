@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -120,6 +121,100 @@ func (wrapper *WrapperClient) ListContainers(ctx context.Context, showAll bool) 
 		Strs("containerNames", getContainerNames(containers)).
 		Msg("Successfully listed container")
 	return containers, nil
+}
+
+// StartContainer will attempt to start created container
+func (wrapper *WrapperClient) StartContainer(ctx context.Context, containerID string) error {
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Attempting to start container")
+
+	if err := wrapper.Cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
+		logger.Trace().
+			Err(err).
+			Str("containerID", containerID).
+			Msg("Failed to start container")
+
+		return err
+	}
+
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Successfully started container")
+
+	return nil
+}
+
+// PauseContainer will attempt to pause a container (which means that it is still in a container but it is not running)
+func (wrapper *WrapperClient) PauseContainer(ctx context.Context, containerID string) error {
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Attempting to pause container")
+
+	if err := wrapper.Cli.ContainerPause(ctx, containerID); err != nil {
+		logger.Trace().
+			Err(err).
+			Str("containerID", containerID).
+			Msg("Failed to pause container")
+
+		return err
+	}
+
+	logger.Trace().
+		Str("containerID", containerID).
+		Msg("Successfully pause container")
+
+	return nil
+}
+
+// StopContainer will attempt to stop a container and turn the container state to be stopped (or killed if it doesn't gracefully shutdown)
+func (wrapper *WrapperClient) StopContainer(ctx context.Context, containerID string, time *time.Duration) error {
+	logger.Trace().
+		Str("containerID", containerID).
+		Str("timeOutDuration", time.String()).
+		Msg("Attempting to stop container")
+
+	if err := wrapper.Cli.ContainerStop(ctx, containerID, time); err != nil {
+		logger.Trace().
+			Err(err).
+			Str("containerID", containerID).
+			Str("timeOutDuration", time.String()).
+			Msg("Failed to stop container")
+
+		return err
+	}
+
+	logger.Trace().
+		Str("containerID", containerID).
+		Str("timeOutDuration", time.String()).
+		Msg("Successfully stop container")
+
+	return nil
+}
+
+// RestartContainer will attempt to restart a container which has been paused
+func (wrapper *WrapperClient) RestartContainer(ctx context.Context, containerID string, time *time.Duration) error {
+	logger.Trace().
+		Str("containerID", containerID).
+		Str("timeOutDuration", time.String()).
+		Msg("Attempting to pause container")
+
+	if err := wrapper.Cli.ContainerRestart(ctx, containerID, time); err != nil {
+		logger.Trace().
+			Err(err).
+			Str("containerID", containerID).
+			Str("timeOutDuration", time.String()).
+			Msg("Failed to pause container")
+
+		return err
+	}
+
+	logger.Trace().
+		Str("containerID", containerID).
+		Str("timeOutDuration", time.String()).
+		Msg("Successfully pause container")
+
+	return nil
 }
 
 func readOutputAndCloseReader(reader io.ReadCloser) error {

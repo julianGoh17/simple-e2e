@@ -14,6 +14,8 @@ const (
 	Errored
 	// Exited means that the container was running but a process inside closed the container
 	Exited
+	// Paused means that the container is paused and currently not running anything
+	Paused
 )
 
 // MapContainerStatusToString will convert the container status to string
@@ -29,6 +31,8 @@ func MapContainerStatusToString(status ContainerStatus) string {
 		return "Errored"
 	case Exited:
 		return "Exited"
+	case Paused:
+		return "Paused"
 	default:
 		return ""
 	}
@@ -45,6 +49,8 @@ func MapStateToStatus(status string) ContainerStatus {
 		return Errored
 	case "exited":
 		return Exited
+	case "paused":
+		return Paused
 	default:
 		return Created
 	}

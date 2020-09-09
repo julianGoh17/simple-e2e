@@ -31,6 +31,10 @@ func TestMapContainerStatusToString(t *testing.T) {
 			Exited,
 			"Exited",
 		},
+		{
+			Paused,
+			"Paused",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -62,6 +66,10 @@ func TestMapStateToStatus(t *testing.T) {
 		{
 			"exited",
 			Exited,
+		},
+		{
+			"paused",
+			Paused,
 		},
 	}
 
