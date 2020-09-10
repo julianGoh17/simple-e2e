@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// TODO: move all consts into test_utilities
 	actualDockerfile      = "Dockerfile.simple"
 	nonExistentDockerfile = "non-existent-Dockerfile"
 	closedReaderError     = "archive/tar: write after close"

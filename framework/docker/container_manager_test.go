@@ -20,7 +20,7 @@ func TestStartContainerFails(t *testing.T) {
 
 func TestStartContainerPasses(t *testing.T) {
 	client := createClient(t)
-	containerManager := createTestContainer(t, &client)
+	containerManager := createShortLifeSpanTestContainer(t, &client)
 	defer deleteTestContainer(t, &client, &containerManager)
 
 	ctx := context.Background()
@@ -39,11 +39,12 @@ func TestRestartContainerFails(t *testing.T) {
 
 func TestRestartContainerPasses(t *testing.T) {
 	client := createClient(t)
-	containerManager := createTestContainer(t, &client)
+	containerManager := createForeverRunningTestContainer(t, &client)
 	defer deleteTestContainer(t, &client, &containerManager)
 
 	ctx := context.Background()
 	assert.NoError(t, containerManager.StartContainer(ctx, &client))
+	assert.NoError(t, containerManager.PauseContainer(ctx, &client, &internal.TestDuration))
 	assert.NoError(t, containerManager.RestartContainer(ctx, &client))
 	assert.Equal(t, Running, containerManager.containerInfo.Status)
 }
@@ -60,7 +61,7 @@ func TestStopContainerFails(t *testing.T) {
 
 func TestStopContainerPasses(t *testing.T) {
 	client := createClient(t)
-	containerManager := createTestContainer(t, &client)
+	containerManager := createShortLifeSpanTestContainer(t, &client)
 	defer deleteTestContainer(t, &client, &containerManager)
 
 	ctx := context.Background()
@@ -80,7 +81,7 @@ func TestPauseContainerFails(t *testing.T) {
 
 func TestPauseContainerPasses(t *testing.T) {
 	client := createClient(t)
-	containerManager := createTestContainer(t, &client)
+	containerManager := createShortLifeSpanTestContainer(t, &client)
 	defer deleteTestContainer(t, &client, &containerManager)
 	ctx := context.Background()
 	assert.NoError(t, containerManager.PauseContainer(ctx, &client, &internal.TestDuration))
@@ -96,13 +97,22 @@ func createNonExistantTestManager() *ContainerManager {
 	}
 }
 
-func createTestContainer(t *testing.T, docker *WrapperClient) ContainerManager {
+func createShortLifeSpanTestContainer(t *testing.T, docker *WrapperClient) ContainerManager {
+	return createTestContainer(t, docker, []string{})
+}
+
+func createForeverRunningTestContainer(t *testing.T, docker *WrapperClient) ContainerManager {
+	return createTestContainer(t, docker, []string{"tail", "-f", "/dev/null"})
+}
+
+func createTestContainer(t *testing.T, docker *WrapperClient, cmd []string) ContainerManager {
 	ctx := context.Background()
 	docker.PullImage(ctx, internal.ExistingImage)
 
 	res, err := docker.CreateContainer(ctx, &container.Config{
 		Image: internal.ExistingImage,
 		Tty:   false,
+		Cmd:   cmd,
 	}, internal.ExistingContainerName)
 
 	assert.NoError(t, err)
