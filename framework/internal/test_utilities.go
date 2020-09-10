@@ -30,7 +30,13 @@ const (
 	// NonExistentContainerID is a containerID that doesn't exist and should cause errors when trying to interact with the container
 	NonExistentContainerID = "non-existent-container"
 	// NonExistentContainerName is the name of a container that doesn't exist and should cause errors when trying to interact with the container
-	NonExistentContainerName = "non-existant"
+	NonExistentContainerName = "non-existent"
+	// UnconnectableContainerName is the name of a container that can't be connected to because the framework is talking to the wrong docker host
+	UnconnectableContainerName = "unconnectable-container"
+	// ActualDockerfile is the name of the actual Dockerfile that is present in the repository
+	ActualDockerfile = "Dockerfile.simple"
+	// NonExistentDockerfile is the name of the actual Dockerfile that is not present in the repository
+	NonExistentDockerfile = "non-existent-Dockerfile"
 )
 
 var (
@@ -38,10 +44,16 @@ var (
 	ErrInvalidHost = fmt.Errorf("unable to parse docker host `random-host`")
 	// ErrCanNotConnectToHost is the error that occurs when the Docker client tries to connect the daemon on UncconnectableDockerHost
 	ErrCanNotConnectToHost = fmt.Errorf("Cannot connect to the Docker daemon at %s. Is the docker daemon running?", UnconnectableDockerHost)
-	// ErrCanNotFindNonExistantContainer is the error that occurs when the Docker client tries to interact with a non-existant container ID
-	ErrCanNotFindNonExistantContainer = fmt.Errorf("Error response from daemon: No such container: %s", NonExistentContainerID)
+	// ErrCanNotFindNonExistentContainer is the error that occurs when the Docker client tries to interact with a non-existent container ID
+	ErrCanNotFindNonExistentContainer = fmt.Errorf("Error response from daemon: No such container: %s", NonExistentContainerID)
+	// ErrCanNotFindNonExistentContainerInRegistry is the error that occurs when the framework tries to find a container not registered in its framework
+	ErrCanNotFindNonExistentContainerInRegistry = fmt.Errorf("Could not find container '%s' in the framework's registry", NonExistentContainerName)
+	// ErrClosedTarReader is the error that occurs when trying to read with a tar reader that is already closed
+	ErrClosedTarReader = fmt.Errorf("archive/tar: write after close")
 	// TestDuration is the standard duration a test should wait for something with a timeout to complete
 	TestDuration time.Duration = 5 * time.Second
+	// ForeverRunningCmd is the command used to make a Docker container run forever on start up
+	ForeverRunningCmd = []string{"tail", "-f", "/dev/null"}
 )
 
 // SetDockerfilesRoot will set 'DOCKERFILES_DIR' env to the path to the 'project's root/Dockerfiles' if it's not already set

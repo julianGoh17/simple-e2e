@@ -86,7 +86,7 @@ func CreateContainer(step *models.Step) error {
 	image, _ := step.GetValueFromVariablesAsString("IMAGE")
 	containerName, _ := step.GetValueFromVariablesAsString("CONTAINER_NAME")
 
-	return traceStepExit(step, step.Docker.CreateContainer(image, containerName))
+	return traceStepExit(step, step.Docker.CreateContainer(image, containerName, []string{}))
 }
 
 // DeleteContainer will delete a container (that has been registered with the framework) based on the container name given.

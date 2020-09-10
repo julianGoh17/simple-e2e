@@ -4,18 +4,11 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	// TODO: move all consts into test_utilities
-	actualDockerfile      = "Dockerfile.simple"
-	nonExistentDockerfile = "non-existent-Dockerfile"
-	closedReaderError     = "archive/tar: write after close"
-	existingImage         = "docker.io/library/alpine"
 )
 
 func TestNewHandlerHasNoNils(t *testing.T) {
@@ -28,12 +21,12 @@ func TestNewHandlerHasNoNils(t *testing.T) {
 }
 
 func TestNewHandlerFailsToInitialize(t *testing.T) {
-	os.Setenv("DOCKER_HOST", "random-host")
+	os.Setenv(internal.DockerHostEnv, internal.InvalidDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
 	handler, err := NewHandler()
 	assert.Nil(t, handler)
 	assert.Error(t, err)
-	assert.Equal(t, "unable to parse docker host `random-host`", err.Error())
-	os.Unsetenv("DOCKER_HOST")
+	assert.Equal(t, internal.ErrInvalidHost.Error(), err.Error())
 }
 
 func TestHandlerPullImage(t *testing.T) {
@@ -42,7 +35,7 @@ func TestHandlerPullImage(t *testing.T) {
 		err   error
 	}{
 		{
-			existingImage,
+			internal.ExistingImage,
 			nil,
 		},
 		{
@@ -90,7 +83,7 @@ func TestHandlerCreateContainerFails(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		err := handler.CreateContainer("random-image", testCase.containerName)
+		err := handler.CreateContainer("random-image", testCase.containerName, []string{})
 		assert.Error(t, err)
 		assert.Equal(t, testCase.err.Error(), err.Error())
 	}
@@ -101,7 +94,7 @@ func TestHandlerCreateAndDeleteContainerPasses(t *testing.T) {
 	assert.NoError(t, err)
 	containerName := "test"
 
-	err = handler.CreateContainer(existingImage, containerName)
+	err = handler.CreateContainer(internal.ExistingImage, containerName, []string{})
 	containersBeforeDeletion := len(handler.containerManagers)
 	assert.NoError(t, err)
 	assert.Greater(t, containersBeforeDeletion, 0)
@@ -128,7 +121,7 @@ func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
 	}{
 		{
 			nonExistentContainerName,
-			fmt.Errorf("Could not find container '%s' in Framework registry", nonExistentContainerName),
+			internal.ErrCanNotFindNonExistentContainerInRegistry,
 		},
 		{
 			existingContainerName,
@@ -146,8 +139,7 @@ func TestHandlerDeleteContainerFromHandlerFails(t *testing.T) {
 func TestMapContainerNamesAndIDsFails(t *testing.T) {
 	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
 	defer os.Unsetenv(internal.DockerHostEnv)
-	handler, err := NewHandler()
-	assert.NoError(t, err)
+	handler, _ := NewHandler()
 
 	containers, err := handler.GetContainerInfo(true)
 	assert.Error(t, err)
@@ -161,7 +153,7 @@ func TestMapContainerNamesAndIDsPasses(t *testing.T) {
 
 	containerName := "test"
 
-	err = handler.CreateContainer(existingImage, containerName)
+	err = handler.CreateContainer(internal.ExistingImage, containerName, []string{})
 	assert.NoError(t, err)
 	assert.Greater(t, len(handler.containerManagers), 0)
 	assert.NotNil(t, handler.containerManagers[containerName])
@@ -223,6 +215,74 @@ func TestGetContainerNamesAndIDs(t *testing.T) {
 		containerInfo := convertToContainerInfo(testCase.containers)
 		assert.Equal(t, testCase.expected, containerInfo)
 	}
+}
+
+/*
+ * ONLY TESTING ERROR CASES, SUCCESS CASES SHOULD BE TESTED IN CONTAINER MANAGER TO REDUCE DUPLICATION
+ */
+
+func TestFrameworkErrorsWhenItCanNotFindContainer(t *testing.T) {
+	emptyHandler := createEmptyHandler(t)
+
+	for _, function := range []func(string) error{
+		emptyHandler.DeleteContainer,
+		emptyHandler.RestartContainer,
+		emptyHandler.StartContainer,
+	} {
+		err := function(internal.NonExistentContainerName)
+		assert.Error(t, err)
+		assert.Equal(t, internal.ErrCanNotFindNonExistentContainerInRegistry.Error(), err.Error())
+	}
+
+	for _, function := range []func(string, *time.Duration) error{
+		emptyHandler.PauseContainer,
+		emptyHandler.StopContainer,
+	} {
+		err := function(internal.NonExistentContainerName, &internal.TestDuration)
+		assert.Error(t, err)
+		assert.Equal(t, internal.ErrCanNotFindNonExistentContainerInRegistry.Error(), err.Error())
+	}
+}
+
+func TestFrameworkErrorsWhenItCanNotTalkToDaemon(t *testing.T) {
+	emptyHandler := createHandlerThatWillTalkToWrongDaemonHandler(t)
+
+	for _, function := range []func(string) error{
+		emptyHandler.DeleteContainer,
+		emptyHandler.RestartContainer,
+		emptyHandler.StartContainer,
+	} {
+		err := function(internal.UnconnectableContainerName)
+		assert.Error(t, err)
+		assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+	}
+
+	for _, function := range []func(string, *time.Duration) error{
+		emptyHandler.PauseContainer,
+		emptyHandler.StopContainer,
+	} {
+		err := function(internal.UnconnectableContainerName, &internal.TestDuration)
+		assert.Error(t, err)
+		assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+	}
+}
+
+func createEmptyHandler(t *testing.T) Handler {
+	handler, err := NewHandler()
+	assert.NoError(t, err)
+	return *handler
+}
+
+func createHandlerThatWillTalkToWrongDaemonHandler(t *testing.T) Handler {
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
+	handler, err := NewHandler()
+	assert.Error(t, err)
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+	handler.containerManagers[internal.UnconnectableContainerName] = &ContainerManager{
+		containerInfo: &ContainerInfo{},
+	}
+	return *handler
 }
 
 func TestMain(m *testing.M) {

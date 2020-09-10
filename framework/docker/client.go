@@ -29,7 +29,7 @@ func (wrapper *WrapperClient) Initialize() error {
 
 	wrapper.Cli = dockerClient
 
-	return traceExitOfError(nil, "Successfully initilaized Framework's Docker client")
+	return traceExitOfError(nil, "Successfully initialized Framework's Docker client")
 }
 
 // Close will close the framework's docker client

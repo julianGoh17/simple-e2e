@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -35,7 +36,7 @@ func NewHandler() (*Handler, error) {
 	handler.wrapper.Cli.NegotiateAPIVersion(ctx)
 
 	if err := handler.initializeContainerManagers(); err != nil {
-		return nil, traceExitOfError(err, "Failed to initialize container managers")
+		return handler, traceExitOfError(err, "Failed to initialize container managers")
 	}
 
 	logger.Trace().Msg("Successfully created new Docker handler")
@@ -53,7 +54,7 @@ func (handler *Handler) PullImage(image string) error {
 }
 
 // CreateContainer will create a container for a specified image and name. The framework will then create a ContainerManager to manage that container
-func (handler *Handler) CreateContainer(image, containerName string) error {
+func (handler *Handler) CreateContainer(image, containerName string, cmd []string) error {
 	logger.Trace().
 		Str("image", image).
 		Str("containerName", containerName).
@@ -70,6 +71,7 @@ func (handler *Handler) CreateContainer(image, containerName string) error {
 	resp, err := handler.wrapper.CreateContainer(ctx, &container.Config{
 		Image: image,
 		Tty:   false,
+		Cmd:   cmd,
 	}, containerName)
 	if err != nil {
 		return traceExitCreateContainerAndContainerManagerError(err, image, containerName, "Failed to create container")
@@ -91,19 +93,19 @@ func (handler *Handler) CreateContainer(image, containerName string) error {
 
 // DeleteContainer will delete a specified container and its corresponding ContainerManager
 func (handler *Handler) DeleteContainer(containerName string) error {
-	logger.Trace().
-		Str("containerName", containerName).
-		Msg("Attempting to delete container and corresponding container manager")
-
-	if _, ok := handler.containerManagers[containerName]; !ok {
-		return traceExitDeleteContainerAndContainerManagerError(fmt.Errorf("Could not find container '%s' in Framework registry", containerName),
-			containerName, "", "Attempted to delete unregistered container")
+	manager, err := handler.findManagerForContainer(containerName)
+	if err != nil {
+		return err
 	}
-
-	manager := handler.containerManagers[containerName]
 	ctx := context.Background()
 	if err := handler.wrapper.DeleteContainer(ctx, manager.containerInfo.ID); err != nil {
-		return traceExitDeleteContainerAndContainerManagerError(err, containerName, manager.containerInfo.ID, "Failed to delete container")
+		logger.Trace().
+			Err(err).
+			Str("containerID", manager.containerInfo.ID).
+			Str("containerName", containerName).
+			Msg("Failed to delete container")
+
+		return err
 	}
 
 	delete(handler.containerManagers, containerName)
@@ -147,12 +149,16 @@ func convertToContainerInfo(containers []types.Container) []*ContainerInfo {
 	return infos
 }
 
+// TODO: It may be useful to have this step run everytime before a docker operation as this is only run on start up currently
 func (handler *Handler) initializeContainerManagers() error {
 	logger.Trace().Msg("Attempting to initialize container managers")
 
 	containerInfos, err := handler.GetContainerInfo(true)
 	if err != nil {
-		logger.Trace().Err(err).Msg("Failed to initialize container managers")
+		logger.Trace().
+			Err(err).
+			Msg("Failed to initialize container managers")
+		return err
 	}
 
 	for _, containerInfo := range containerInfos {
@@ -163,21 +169,75 @@ func (handler *Handler) initializeContainerManagers() error {
 	return nil
 }
 
+// StartContainer will start running a container that has been created (with whatever it has been configured with on creation)
+func (handler *Handler) StartContainer(containerName string) error {
+	manager, err := handler.findManagerForContainer(containerName)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	return manager.StartContainer(ctx, handler.wrapper)
+}
+
+// StopContainer will gracefully stop running a container within a certain period of time before it will forcibly kill a container
+func (handler *Handler) StopContainer(containerName string, time *time.Duration) error {
+	manager, err := handler.findManagerForContainer(containerName)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	return manager.StopContainer(ctx, handler.wrapper, time)
+}
+
+// RestartContainer will restart a container that is currently running
+func (handler *Handler) RestartContainer(containerName string) error {
+	manager, err := handler.findManagerForContainer(containerName)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	return manager.RestartContainer(ctx, handler.wrapper)
+}
+
+// PauseContainer will pause the main executing process in the container without terminating it (leaving it running)
+func (handler *Handler) PauseContainer(containerName string, time *time.Duration) error {
+	manager, err := handler.findManagerForContainer(containerName)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	return manager.PauseContainer(ctx, handler.wrapper, time)
+}
+
+func (handler *Handler) findManagerForContainer(containerName string) (*ContainerManager, error) {
+	logger.Trace().
+		Str("containerName", containerName).
+		Msg("Attempting to find container in registry")
+
+	if _, ok := handler.containerManagers[containerName]; !ok {
+		err := fmt.Errorf("Could not find container '%s' in the framework's registry", containerName)
+		logger.Trace().
+			Str("containerName", containerName).
+			Err(err).
+			Msg("Failed to find container in registry")
+		return &ContainerManager{}, err
+	}
+
+	logger.Trace().
+		Str("containerName", containerName).
+		Msg("Succcesfully found container in registry")
+	return handler.containerManagers[containerName], nil
+}
+
 func traceExitCreateContainerAndContainerManagerError(err error, image, containerName, msg string) error {
 	logger.Trace().
 		Str("image", image).
 		Str("containerName", containerName).
 		Err(err).
-		Msg(msg)
-
-	return err
-}
-
-func traceExitDeleteContainerAndContainerManagerError(err error, containerName, containerID, msg string) error {
-	logger.Trace().
-		Err(err).
-		Str("containerID", containerID).
-		Str("containerName", containerName).
 		Msg(msg)
 
 	return err

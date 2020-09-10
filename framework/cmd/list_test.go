@@ -52,7 +52,7 @@ func TestListCommandListsAllRunningDockerContainers(t *testing.T) {
 	containerName := "test"
 
 	assert.NoError(t, handler.PullImage(internal.ExistingImage))
-	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName))
+	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName, []string{}))
 
 	containers, err := handler.GetContainerInfo(true)
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestListCommandListsCertainDockerContainers(t *testing.T) {
 	containerName := "test"
 
 	assert.NoError(t, handler.PullImage(internal.ExistingImage))
-	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName))
+	assert.NoError(t, handler.CreateContainer(internal.ExistingImage, containerName, []string{}))
 
 	containers, err := handler.GetContainerInfo(false)
 	assert.NoError(t, err)

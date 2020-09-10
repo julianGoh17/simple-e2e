@@ -13,15 +13,15 @@ import (
 
 func TestReadDockerfileFailsWhenDockerfileCanNotBeFound(t *testing.T) {
 	internal.SetDockerfilesRoot()
-	bytes, err := readDockerfile(nonExistentDockerfile)
+	bytes, err := readDockerfile(internal.NonExistentDockerfile)
 	assert.Error(t, err)
 	assert.Equal(t, []byte(nil), bytes)
-	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), nonExistentDockerfile), err.Error())
+	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), internal.NonExistentDockerfile), err.Error())
 }
 
 func TestReadDockerfileFailsWhenDockerfilePasses(t *testing.T) {
 	internal.SetDockerfilesRoot()
-	bytes, err := readDockerfile(actualDockerfile)
+	bytes, err := readDockerfile(internal.ActualDockerfile)
 	assert.NoError(t, err)
 	assert.NotNil(t, bytes)
 }
@@ -30,17 +30,17 @@ func TestWriteTarHeaderFailsAndPasses(t *testing.T) {
 	tw, _ := createTarWriterAndBuffer()
 	errors := []error{
 		nil,
-		fmt.Errorf(closedReaderError),
+		fmt.Errorf(internal.ErrClosedTarReader.Error()),
 	}
 
 	for _, err := range errors {
 		if err != nil {
 			tw.Close()
 		}
-		err := writeTarHeader(nonExistentDockerfile, []byte{}, tw)
+		err := writeTarHeader(internal.NonExistentDockerfile, []byte{}, tw)
 		if err != nil {
 			assert.Error(t, err)
-			assert.Equal(t, err.Error(), closedReaderError)
+			assert.Equal(t, err.Error(), internal.ErrClosedTarReader.Error())
 		} else {
 			assert.NoError(t, err)
 			assert.Nil(t, err)
@@ -51,17 +51,17 @@ func TestWriteTarBytesFails(t *testing.T) {
 	tw, _ := createTarWriterAndBuffer()
 	errors := []error{
 		nil,
-		fmt.Errorf(closedReaderError),
+		fmt.Errorf(internal.ErrClosedTarReader.Error()),
 	}
 
 	for _, err := range errors {
 		if err != nil {
 			tw.Close()
 		}
-		err := writeTarBytes(nonExistentDockerfile, []byte{}, tw)
+		err := writeTarBytes(internal.NonExistentDockerfile, []byte{}, tw)
 		if err != nil {
 			assert.Error(t, err)
-			assert.Equal(t, err.Error(), closedReaderError)
+			assert.Equal(t, err.Error(), internal.ErrClosedTarReader.Error())
 		} else {
 			assert.NoError(t, err)
 			assert.Nil(t, err)
@@ -72,9 +72,9 @@ func TestWriteTarBytesFails(t *testing.T) {
 func TestCreateDockerfileFails(t *testing.T) {
 	tw, buf := createTarWriterAndBuffer()
 	tw.Close()
-	reader, err := createDockerfileBuild(nonExistentDockerfile, []byte{}, tw, buf)
+	reader, err := createDockerfileBuild(internal.NonExistentDockerfile, []byte{}, tw, buf)
 	assert.Error(t, err)
-	assert.Equal(t, closedReaderError, err.Error())
+	assert.Equal(t, internal.ErrClosedTarReader.Error(), err.Error())
 	assert.Nil(t, reader)
 }
 
@@ -82,7 +82,7 @@ func TestBuildImagePasses(t *testing.T) {
 	internal.SetDockerfilesRoot()
 	handler, err := NewHandler()
 	assert.NoError(t, err)
-	err = handler.BuildImage(actualDockerfile, "test")
+	err = handler.BuildImage(internal.ActualDockerfile, "test")
 	assert.NoError(t, err)
 }
 
@@ -91,9 +91,9 @@ func TestBuildImageFails(t *testing.T) {
 	handler, err := NewHandler()
 	assert.NoError(t, err)
 
-	err = handler.BuildImage(nonExistentDockerfile, "test")
+	err = handler.BuildImage(internal.NonExistentDockerfile, "test")
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), nonExistentDockerfile), err.Error())
+	assert.Equal(t, fmt.Sprintf("open %s/%s: no such file or directory", config.GetOrDefault(util.DockerfileDirEnv), internal.NonExistentDockerfile), err.Error())
 }
 
 func createTarWriterAndBuffer() (*tar.Writer, *bytes.Buffer) {

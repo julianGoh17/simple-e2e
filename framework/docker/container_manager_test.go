@@ -11,11 +11,11 @@ import (
 
 func TestStartContainerFails(t *testing.T) {
 	client := createClient(t)
-	containerManager := createNonExistantTestManager()
+	containerManager := createNonExistentTestManager()
 	ctx := context.Background()
 	err := containerManager.StartContainer(ctx, &client)
 	assert.Error(t, err)
-	assert.Equal(t, internal.ErrCanNotFindNonExistantContainer.Error(), err.Error())
+	assert.Equal(t, internal.ErrCanNotFindNonExistentContainer.Error(), err.Error())
 }
 
 func TestStartContainerPasses(t *testing.T) {
@@ -30,11 +30,11 @@ func TestStartContainerPasses(t *testing.T) {
 
 func TestRestartContainerFails(t *testing.T) {
 	client := createClient(t)
-	containerManager := createNonExistantTestManager()
+	containerManager := createNonExistentTestManager()
 	ctx := context.Background()
 	err := containerManager.RestartContainer(ctx, &client)
 	assert.Error(t, err)
-	assert.Equal(t, internal.ErrCanNotFindNonExistantContainer.Error(), err.Error())
+	assert.Equal(t, internal.ErrCanNotFindNonExistentContainer.Error(), err.Error())
 }
 
 func TestRestartContainerPasses(t *testing.T) {
@@ -51,12 +51,12 @@ func TestRestartContainerPasses(t *testing.T) {
 
 func TestStopContainerFails(t *testing.T) {
 	client := createClient(t)
-	containerManager := createNonExistantTestManager()
+	containerManager := createNonExistentTestManager()
 
 	ctx := context.Background()
 	err := containerManager.StopContainer(ctx, &client, &internal.TestDuration)
 	assert.Error(t, err)
-	assert.Equal(t, internal.ErrCanNotFindNonExistantContainer.Error(), err.Error())
+	assert.Equal(t, internal.ErrCanNotFindNonExistentContainer.Error(), err.Error())
 }
 
 func TestStopContainerPasses(t *testing.T) {
@@ -72,11 +72,11 @@ func TestStopContainerPasses(t *testing.T) {
 
 func TestPauseContainerFails(t *testing.T) {
 	client := createClient(t)
-	containerManager := createNonExistantTestManager()
+	containerManager := createNonExistentTestManager()
 	ctx := context.Background()
 	err := containerManager.PauseContainer(ctx, &client, &internal.TestDuration)
 	assert.Error(t, err)
-	assert.Equal(t, internal.ErrCanNotFindNonExistantContainer.Error(), err.Error())
+	assert.Equal(t, internal.ErrCanNotFindNonExistentContainer.Error(), err.Error())
 }
 
 func TestPauseContainerPasses(t *testing.T) {
@@ -88,7 +88,7 @@ func TestPauseContainerPasses(t *testing.T) {
 	assert.Equal(t, Paused, containerManager.containerInfo.Status)
 }
 
-func createNonExistantTestManager() *ContainerManager {
+func createNonExistentTestManager() *ContainerManager {
 	return &ContainerManager{
 		containerInfo: &ContainerInfo{
 			Name: internal.NonExistentContainerName,
