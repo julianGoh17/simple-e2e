@@ -28,7 +28,10 @@ type Controller struct {
 func NewController() (*Controller, error) {
 	docker, err := docker.NewHandler()
 	if err != nil {
-		return nil, err
+		return &Controller{
+			stepManager: nil,
+			docker:      docker,
+		}, err
 	}
 	return &Controller{
 		stepManager: NewStepManager(),

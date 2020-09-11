@@ -4,6 +4,14 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
+	"unicode"
+)
+
+const (
+	secondsUnit      = "s"
+	millisecondsUnit = "ms"
+	minuteUnit       = "m"
 )
 
 // TypeConverter aims to convert the string variable in the step.variables and converts it to the appropriate type wanted by the user
@@ -44,6 +52,48 @@ func (converter *TypeConverter) GetBoolean(variable string) (bool, error) {
 		return false, fmt.Errorf("Could not convert '%s' to type 'bool'", variable)
 	}
 	return value, nil
+}
+
+// GetTimeDuration converts the string'd variable and converts it to an time duration if possible otherwise will return an error
+// Conversions:
+// - s: seconds
+// - ms: milliseconds
+// - m: minutes
+// I.E: 5m = 5 minutes
+func (converter *TypeConverter) GetTimeDuration(variable string) (time.Duration, error) {
+	stringNum := ""
+	unit := ""
+	for _, char := range variable {
+		if unicode.IsDigit(char) {
+			stringNum += string(char)
+		} else {
+			unit += string(char)
+		}
+	}
+
+	duration := convertUnitToDuration(unit)
+	if duration == time.Hour {
+		return time.Duration(0), fmt.Errorf("Could not parse unit '%s'. Must be one of: '%s', '%s', '%s'", unit, millisecondsUnit, secondsUnit, minuteUnit)
+	}
+
+	num, err := strconv.Atoi(stringNum)
+	if err != nil {
+		return time.Duration(0), err
+	}
+
+	return time.Duration(num) * duration, nil
+}
+
+func convertUnitToDuration(unit string) time.Duration {
+	switch unit {
+	case secondsUnit:
+		return time.Second
+	case millisecondsUnit:
+		return time.Millisecond
+	case minuteUnit:
+		return time.Minute
+	}
+	return time.Hour
 }
 
 // GetIntegerArray converts the string'd variable, splits it by ",", and converts it to an array of integers

@@ -2,20 +2,12 @@ package operations
 
 import (
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/julianGoh17/simple-e2e/framework/docker"
+	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/julianGoh17/simple-e2e/framework/models"
-	"github.com/julianGoh17/simple-e2e/framework/util"
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	existingImage = "docker.io/library/alpine"
 )
 
 func TestSayHelloToStep(t *testing.T) {
@@ -226,6 +218,162 @@ func TestDeleteContainerStepFails(t *testing.T) {
 	}
 }
 
+func TestStartContainerStepFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{},
+				Docker:    docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": internal.NonExistentContainerName,
+				},
+				Docker: docker,
+			},
+			internal.ErrCanNotFindNonExistentContainerInRegistry,
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := StartContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestRestartContainerFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{},
+				Docker:    docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": internal.NonExistentContainerName,
+				},
+				Docker: docker,
+			},
+			internal.ErrCanNotFindNonExistentContainerInRegistry,
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := RestartContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestStopContainerStepFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": "TEST",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TIME_DURATION"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"TIME_DURATION": "TEST",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": internal.NonExistentContainerName,
+					"TIME_DURATION":  "1m",
+				},
+				Docker: docker,
+			},
+			internal.ErrCanNotFindNonExistentContainerInRegistry,
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := StopContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
+func TestPauseContainerStepFails(t *testing.T) {
+	docker, err := docker.NewHandler()
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		step *models.Step
+		err  error
+	}{
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": "TEST",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TIME_DURATION"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"TIME_DURATION": "TEST",
+				},
+				Docker: docker,
+			},
+			fmt.Errorf("Could not find variable '%s' in step.variables", "CONTAINER_NAME"),
+		},
+		{
+			&models.Step{
+				Variables: map[string]string{
+					"CONTAINER_NAME": internal.NonExistentContainerName,
+					"TIME_DURATION":  "1m",
+				},
+				Docker: docker,
+			},
+			internal.ErrCanNotFindNonExistentContainerInRegistry,
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := PauseContainer(testCase.step)
+		assert.Error(t, err)
+		assert.Equal(t, testCase.err.Error(), err.Error())
+	}
+}
+
 func TestCreateAndDeleteContainerStepPasses(t *testing.T) {
 	docker, err := docker.NewHandler()
 	assert.NoError(t, err)
@@ -233,7 +381,7 @@ func TestCreateAndDeleteContainerStepPasses(t *testing.T) {
 	step := &models.Step{
 		Variables: map[string]string{
 			"CONTAINER_NAME": "test-container",
-			"IMAGE":          existingImage,
+			"IMAGE":          internal.ExistingImage,
 		},
 		Docker: docker,
 	}
@@ -243,7 +391,7 @@ func TestCreateAndDeleteContainerStepPasses(t *testing.T) {
 }
 
 func TestBuildImageStepPasses(t *testing.T) {
-	SetDockerfilesRoot()
+	internal.SetDockerfilesRoot()
 	docker, err := docker.NewHandler()
 	assert.NoError(t, err)
 
@@ -257,13 +405,4 @@ func TestBuildImageStepPasses(t *testing.T) {
 
 	err = BuildImage(step)
 	assert.NoError(t, err)
-}
-
-func SetDockerfilesRoot() {
-	// If not in container, set as the path to the 'project's root/Dockerfiles'
-	if os.Getenv(util.DockerfileDirEnv) == "" {
-		_, b, _, _ := runtime.Caller(0)
-		d := path.Join(path.Dir(b))
-		os.Setenv(util.DockerfileDirEnv, fmt.Sprintf("%s/../Dockerfiles", filepath.Dir(d)))
-	}
 }

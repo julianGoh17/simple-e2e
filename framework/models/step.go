@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/julianGoh17/simple-e2e/framework/docker"
 )
@@ -71,6 +72,14 @@ func (s *Step) GetValueFromVariablesAsBoolean(variableName string) (bool, error)
 		return s.converter.GetBoolean(val)
 	}
 	return false, fmt.Errorf("Could not find variable '%s' in step.variables", variableName)
+}
+
+// GetValueFromVariablesAsTimeDuration will return the variable specific to this step from the step.variables as a time duration if it exists otherwise it will return an error
+func (s *Step) GetValueFromVariablesAsTimeDuration(variableName string) (time.Duration, error) {
+	if val, ok := s.Variables[variableName]; ok {
+		return s.converter.GetTimeDuration(val)
+	}
+	return time.Duration(0), fmt.Errorf("Could not find variable '%s' in step.variables", variableName)
 }
 
 // GetValueFromVariablesAsStringArray will return the variable specific to this step from the step.variables as a string array (separated by commas)

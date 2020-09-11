@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/julianGoh17/simple-e2e/framework/internal"
 	"github.com/stretchr/testify/assert"
@@ -274,6 +275,54 @@ func TestGettingBooleanVariableFromStepVariables(t *testing.T) {
 
 	for _, table := range tables {
 		val, err := table.step.GetValueFromVariablesAsBoolean("TEST")
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, table.expected, val)
+		} else {
+			assert.Error(t, table.err, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestGettingTimeDurationVariableFromStepVariables(t *testing.T) {
+	tables := []struct {
+		step     *Step
+		expected time.Duration
+		err      error
+	}{
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "RandomVariable",
+				},
+			},
+			time.Duration(0),
+			fmt.Errorf("Could not parse unit 'RandomVariable'. Must be one of: '%s', '%s', '%s'", millisecondsUnit, secondsUnit, minuteUnit),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables:   map[string]string{},
+			},
+			time.Duration(0),
+			fmt.Errorf("Could not find variable '%s' in step.variables", "TEST"),
+		},
+		{
+			&Step{
+				Description: "This is a step",
+				Variables: map[string]string{
+					"TEST": "1m",
+				},
+			},
+			time.Duration(1) * time.Minute,
+			nil,
+		},
+	}
+
+	for _, table := range tables {
+		val, err := table.step.GetValueFromVariablesAsTimeDuration("TEST")
 		if table.err == nil {
 			assert.NoError(t, err)
 			assert.Equal(t, table.expected, val)

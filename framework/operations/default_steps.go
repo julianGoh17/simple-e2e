@@ -77,6 +77,7 @@ func BuildImage(step *models.Step) error {
 // Environmental Variables:
 // 	- IMAGE: The name of the image to create the container with
 //  - CONTAINER_NAME: The name to give to the created container
+//  - CMD: A comma separated list of commands that will be run on start up of the container. If nothing passed in, then it will use the entrypoint as a starting point
 func CreateContainer(step *models.Step) error {
 	traceStepEntrance(step)
 	if err := step.CheckIfStepVariablesExists("IMAGE", "CONTAINER_NAME"); err != nil {
@@ -85,8 +86,15 @@ func CreateContainer(step *models.Step) error {
 
 	image, _ := step.GetValueFromVariablesAsString("IMAGE")
 	containerName, _ := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	cmd, err := step.GetValueFromVariablesAsStringArray("CMD")
+	if err != nil {
+		cmd = []string{}
+		logger.Debug().
+			Err(err).
+			Msg("Error getting CMD, using default entrypoint")
+	}
 
-	return traceStepExit(step, step.Docker.CreateContainer(image, containerName, []string{}))
+	return traceStepExit(step, step.Docker.CreateContainer(image, containerName, cmd))
 }
 
 // DeleteContainer will delete a container (that has been registered with the framework) based on the container name given.
@@ -100,6 +108,68 @@ func DeleteContainer(step *models.Step) error {
 		return traceStepExit(step, err)
 	}
 	return traceStepExit(step, step.Docker.DeleteContainer(containerName))
+}
+
+// StartContainer will start running a container with whatever it has been set up to run during creation time
+// Environmental Variables:
+//  - CONTAINER_NAME: The name of the container to start
+func StartContainer(step *models.Step) error {
+	traceStepEntrance(step)
+
+	containerName, err := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	if err != nil {
+		return traceStepExit(step, err)
+	}
+
+	return traceStepExit(step, step.Docker.StartContainer(containerName))
+}
+
+// RestartContainer will stop and then start a running container
+// Environmental Variables:
+//  - CONTAINER_NAME: The name of the container to restart
+func RestartContainer(step *models.Step) error {
+	traceStepEntrance(step)
+
+	containerName, err := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	if err != nil {
+		return traceStepExit(step, err)
+	}
+
+	return traceStepExit(step, step.Docker.RestartContainer(containerName))
+}
+
+// StopContainer will stop a running container gracefully. If it fails to shut down gracefully in time requested, it will forcefully kill the container
+// Environmental Variables:
+//  - CONTAINER_NAME: The name of the container to stop
+//  - TIME_DURATION: The amount of time the container will wait for graceful shutdown before forcefully terminating the container
+func StopContainer(step *models.Step) error {
+	traceStepEntrance(step)
+
+	if err := step.CheckIfStepVariablesExists("CONTAINER_NAME", "TIME_DURATION"); err != nil {
+		return traceStepExit(step, err)
+	}
+
+	containerName, _ := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	timeDuration, _ := step.GetValueFromVariablesAsTimeDuration("TIME_DURATION")
+
+	return traceStepExit(step, step.Docker.StopContainer(containerName, &timeDuration))
+}
+
+// PauseContainer will stop pause the main executing process in the container. If it fails to shut down gracefully in time requested, it will forcefully kill the container
+// Environmental Variables:
+//  - CONTAINER_NAME: The name of the container to stop
+//  - TIME_DURATION: The amount of time the container will wait for graceful shutdown before forcefully terminating the container
+func PauseContainer(step *models.Step) error {
+	traceStepEntrance(step)
+
+	if err := step.CheckIfStepVariablesExists("CONTAINER_NAME", "TIME_DURATION"); err != nil {
+		return traceStepExit(step, err)
+	}
+
+	containerName, _ := step.GetValueFromVariablesAsString("CONTAINER_NAME")
+	timeDuration, _ := step.GetValueFromVariablesAsTimeDuration("TIME_DURATION")
+
+	return traceStepExit(step, step.Docker.PauseContainer(containerName, &timeDuration))
 }
 
 func traceStepEntrance(step *models.Step) {

@@ -160,6 +160,39 @@ func TestRunStages(t *testing.T) {
 	}
 }
 
+func TestGetContainerInformationFails(t *testing.T) {
+	os.Setenv(internal.DockerHostEnv, internal.UnconnectableDockerHost)
+	defer os.Unsetenv(internal.DockerHostEnv)
+	controller, err := NewController()
+	assert.Error(t, err)
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+
+	_, err = controller.GetContainerInfo(true)
+	assert.Error(t, err)
+	assert.Equal(t, internal.ErrCanNotConnectToHost.Error(), err.Error())
+}
+
+func TestGetContainerInformationPasses(t *testing.T) {
+	controller, err := NewController()
+	assert.NoError(t, err)
+	assert.NoError(t, controller.docker.PullImage(internal.ExistingImage))
+	assert.NoError(t, controller.docker.CreateContainer(internal.ExistingImage, internal.ExistingContainerName, []string{}))
+	defer controller.docker.DeleteContainer(internal.ExistingContainerName)
+
+	containerInfos, err := controller.GetContainerInfo(true)
+	assert.NoError(t, err)
+
+	hasCreatedContainer := false
+	for _, containerInfo := range containerInfos {
+		if containerInfo.Image == internal.ExistingImage {
+			hasCreatedContainer = true
+		}
+	}
+
+	assert.Equal(t, true, hasCreatedContainer, "Could not find created container when listing containers")
+
+}
+
 func TestWillRunAlwaysRunsEvenWhenFail(t *testing.T) {
 	controller, err := NewController()
 	assert.NoError(t, err)

@@ -2,8 +2,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConvertingToInteger(t *testing.T) {
@@ -151,6 +153,71 @@ func TestConvertingToBoolean(t *testing.T) {
 			assert.Error(t, err)
 			assert.Equal(t, table.err.Error(), err.Error())
 		}
+	}
+}
+
+func TestConvertingToTimeDuartion(t *testing.T) {
+	tables := []struct {
+		variable string
+		expected time.Duration
+		err      error
+	}{
+		{
+			"No work",
+			time.Duration(0),
+			fmt.Errorf("Could not parse unit 'No work'. Must be one of: '%s', '%s', '%s'", millisecondsUnit, secondsUnit, minuteUnit),
+		},
+		{
+			"1m",
+			time.Duration(1) * time.Minute,
+			nil,
+		},
+		{
+			"12",
+			time.Duration(0),
+			fmt.Errorf("Could not parse unit ''. Must be one of: '%s', '%s', '%s'", millisecondsUnit, secondsUnit, minuteUnit),
+		},
+	}
+
+	converter := TypeConverter{}
+
+	for _, table := range tables {
+		val, err := converter.GetTimeDuration(table.variable)
+		if table.err == nil {
+			assert.NoError(t, err)
+			assert.Equal(t, val, table.expected)
+		} else {
+			assert.Error(t, err)
+			assert.Equal(t, table.err.Error(), err.Error())
+		}
+	}
+}
+
+func TestConvertUnitToTestDuration(t *testing.T) {
+	testCases := []struct {
+		variable string
+		time     time.Duration
+	}{
+		{
+			"ms",
+			time.Millisecond,
+		},
+		{
+			"s",
+			time.Second,
+		},
+		{
+			"m",
+			time.Minute,
+		},
+		{
+			"won't work",
+			time.Hour,
+		},
+	}
+
+	for _, testCase := range testCases {
+		assert.Equal(t, testCase.time, convertUnitToDuration(testCase.variable))
 	}
 }
 
